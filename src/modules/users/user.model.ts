@@ -1,8 +1,5 @@
 import { Schema, model, Types } from "mongoose";
-
-export type UserRole = "student" | "tutor" | "premiumTutor" | "admin";
-export type VerificationStatus = "pending" | "verified" | "rejected";
-export type PayoutMethod = "bank" | "upi" | "stripe";
+import { UserRole, VerificationStatus, PayoutMethod } from "./user.types";
 
 export interface IUser {
   _id: Types.ObjectId;
