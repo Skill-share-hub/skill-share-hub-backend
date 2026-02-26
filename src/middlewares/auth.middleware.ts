@@ -40,7 +40,13 @@ export const authenticate = async (
       });
     }
 
-    req.user = user;
+    req.user = {
+  _id: user._id.toString(),
+  name: user.name,
+  email: user.email,
+  role: user.role,
+  verificationStatus: user.verificationStatus,
+};
 
     next();
   } catch (error: any) {
