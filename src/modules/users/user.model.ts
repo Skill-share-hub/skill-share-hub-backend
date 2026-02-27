@@ -6,6 +6,7 @@ export interface IUser {
 
   // Basic Auth Data
   name: string;
+  avatarUrl?: string;
   email: string;
   passwordHash: string;
   role: UserRole;
@@ -43,6 +44,7 @@ const userSchema = new Schema<IUser>(
   {
     // Basic
     name: { type: String, required: true },
+    avatarUrl: { type: String, default: "" },
     email: {
       type: String,
       required: true,
