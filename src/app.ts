@@ -4,7 +4,11 @@ import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
-import routes from './routes';
+// Routes
+import userRoutes from "./modules/users/user.routes";
+
+
+
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 
 const app = express();
@@ -16,7 +20,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use('/api', routes);
+// API Routes
+
+app.use("/api/users", userRoutes);
+
+
+
 
 app.use(notFoundHandler);
 app.use(errorHandler);
