@@ -10,12 +10,13 @@ import userRoutes from "./modules/users/user.routes";
 
 
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { env } from './config/env';
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: env.clientUrl,
     credentials: true,
   }));
 app.use(morgan('dev'));
