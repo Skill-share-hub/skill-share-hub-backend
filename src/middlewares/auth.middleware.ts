@@ -14,7 +14,12 @@ export const authenticate = async (
 ) => {
   try {
     const token = req.cookies.accessToken;
-
+ if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "Access token missing",
+      });
+    }
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string,
