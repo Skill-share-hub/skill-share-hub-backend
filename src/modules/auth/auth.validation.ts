@@ -11,7 +11,7 @@ export const validateRegisterInput = (body: unknown): RegisterInput => {
     throw new ApiError(400, 'Request body is required');
   }
 
-  const { name, email, password,confirmPassword } = body as Record<string, unknown>;
+  const { name, email, password, confPassword } = body as Record<string, unknown>;
 
   if (typeof name !== 'string' || name.trim().length < 2) {
     throw new ApiError(400, 'Name must be at least 2 characters');
@@ -24,12 +24,38 @@ export const validateRegisterInput = (body: unknown): RegisterInput => {
   if (typeof password !== 'string' || password.length < 8) {
     throw new ApiError(400, 'Password must be at least 8 characters');
   }
-  if(confirmPassword!==password){
+  if (confPassword !== password) {
     throw new ApiError(400, 'Password and confirm password not match');
   }
 
   return {
     name: name.trim(),
+    email: email.trim().toLowerCase(),
+    password
+  };
+};
+
+export interface LoginInput {
+  email: string;
+  password: string;
+}
+
+export const validateLoginInput = (body: unknown): LoginInput => {
+  if (!body || typeof body !== 'object') {
+    throw new ApiError(400, 'Request body is required');
+  }
+
+  const { email, password } = body as Record<string, unknown>;
+
+  if (typeof email !== 'string' || !email.trim()) {
+    throw new ApiError(400, 'Email is required');
+  }
+
+  if (typeof password !== 'string' || !password) {
+    throw new ApiError(400, 'Password is required');
+  }
+
+  return {
     email: email.trim().toLowerCase(),
     password
   };
