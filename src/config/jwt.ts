@@ -24,3 +24,7 @@ export const generateAccessToken = (payload: JwtPayload): string => {
 export const generateRefreshToken = (payload: JwtPayload): string => {
   return signToken(payload, env.jwtRefreshSecret, env.jwtRefreshExpiresIn as SignOptions['expiresIn']);
 };
+
+export const verifyRefreshToken = (token: string): JwtPayload => {
+  return jwt.verify(token, env.jwtRefreshSecret) as JwtPayload;
+};
