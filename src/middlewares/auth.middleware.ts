@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { User } from "../modules/users/user.model";
+import { env } from "../config/env";
 
 interface JwtPayload {
   userId: string;
@@ -26,7 +27,7 @@ export const authenticate = async (
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as string,
+      env.jwtAccessSecret,
     ) as JwtPayload;
 
     const user = await User.findById(decoded.userId).select(
@@ -41,12 +42,12 @@ export const authenticate = async (
     }
 
     req.user = {
-  _id: user._id.toString(),
-  name: user.name,
-  email: user.email,
-  role: user.role,
-  verificationStatus: user.verificationStatus,
-};
+      _id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      verificationStatus: user.verificationStatus,
+    };
 
     next();
   } catch (error: any) {

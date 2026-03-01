@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response, ErrorRequestHandler } from 'express';
+import { env } from '../config/env';
 
 type ErrorWithStatus = Error & {
   statusCode?: number;
@@ -18,6 +19,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   res.status(statusCode).json({
     success: false,
     message: error.message || 'Internal server error',
-    ...(process.env.NODE_ENV !== 'production' ? { stack: error.stack } : {})
+    ...(env.nodeEnv !== 'production' ? { stack: error.stack } : {})
   });
 };
