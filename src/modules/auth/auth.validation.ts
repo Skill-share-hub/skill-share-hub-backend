@@ -48,4 +48,10 @@ export const loginSchema = z.object({
     .min(1, 'Password is required'),
 });
 
-
+export const sendOtpSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address'),
+});
