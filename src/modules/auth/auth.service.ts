@@ -69,6 +69,42 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterRespon
   };
 };
 
+export const loginUser = async (input: LoginInput): Promise<RegisterResponse> => {
+  const user = await User.findOne({ email: input.email }).lean();
+
+  if (!user || user.passwordHash === undefined) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const isPasswordValid = await comparePassword(input.password, user.passwordHash);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const tokenPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    tokens: {
+      accessToken,
+      refreshToken
+    }
+  };
+};
+
 export const refreshTokens = async (refreshToken: string): Promise<RegisterResponse> => {
   try {
     const decoded = verifyRefreshToken(refreshToken);

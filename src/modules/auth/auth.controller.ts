@@ -5,6 +5,8 @@ import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { refreshTokens, registerUser, sendOtpService, verifyOtpService } from './auth.service';
 import { RegisterInput } from './auth.validation';
+import { loginUser, refreshTokens, registerUser } from './auth.service';
+import { LoginInput, RegisterInput } from './auth.validation';
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -31,6 +33,36 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     res.status(201).json(
       new ApiResponse('User registered successfully', {
+        user: result.user
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const payload = req.body as LoginInput;
+    const result = await loginUser(payload);
+    const isProduction = env.nodeEnv === 'production';
+
+    res.cookie('accessToken', result.tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: ACCESS_COOKIE_MAX_AGE
+    });
+
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: REFRESH_COOKIE_MAX_AGE
+    });
+
+    res.status(200).json(
+      new ApiResponse('User logged in successfully', {
         user: result.user
       })
     );
