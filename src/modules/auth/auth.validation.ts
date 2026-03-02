@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const registerSchema = z
+export const baseSchema = z
   .object({
     name: z
       .string({ error: 'Name is required' })
@@ -23,14 +23,23 @@ export const registerSchema = z
 
     confirmPassword: z.string({
       error: 'Confirm password is required',
-    }),
+    })
+  });
 
-    otp: z
-      .string({ error: 'OTP is required' })
-      .trim()
-      .min(1, 'OTP is required'),
+export const otpSchema = baseSchema.
+  refine((data) => data.password === data.confirmPassword, {
+    message: 'Password and confirm password do not match',
+    path: ['confirmPassword'],
   })
-  .refine((data) => data.password === data.confirmPassword, {
+  .transform(({ confirmPassword: _, ...rest }) => rest);
+
+export const registerSchema = baseSchema.extend({
+  otp: z
+    .string({ error: 'OTP is required' })
+    .trim()
+    .min(1, 'OTP is required'),
+}).
+  refine((data) => data.password === data.confirmPassword, {
     message: 'Password and confirm password do not match',
     path: ['confirmPassword'],
   })
