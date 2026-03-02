@@ -3,6 +3,8 @@ import { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
+import { refreshTokens, registerUser, sendOtpService, verifyOtpService } from './auth.service';
+import { RegisterInput } from './auth.validation';
 import { loginUser, refreshTokens, registerUser } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.validation';
 
@@ -103,3 +105,17 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
+
+export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
+try{
+  const email=req.body.email;
+  const otp=await sendOtpService(email);
+  res.status(200).json(
+    new ApiResponse('Otp sent successfully', {
+      otp
+    })
+  ); 
+}catch(error){
+next(error);
+}
+}

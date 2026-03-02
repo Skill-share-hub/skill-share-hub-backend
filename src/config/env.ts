@@ -30,5 +30,15 @@ export const env = {
   jwtRefreshSecret: getEnv('JWT_REFRESH_SECRET', 'dev_refresh_secret_change_me'),
   jwtAccessExpiresIn: getEnv('JWT_ACCESS_EXPIRES_IN', '15m'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
-  clientUrl:getEnv("CLIENT_URL")
+  clientUrl: getEnv("CLIENT_URL"),
+  redisUrl: getEnv("REDIS_URL"),
+  emailHost: getEnv("MAIL_HOST"),
+  emailPort: parsePort(getEnv("MAIL_PORT", "587")),
+  emailSecure: getEnv("MAIL_SECURE", "false") === "true",
+  emailUser: getEnv("MAIL_USER"), 
+  emailPass: getEnv("MAIL_PASS"),
+  redisUsername:getEnv("REDIS_USERNAME"),
+  redisPassword:getEnv("REDIS_PASSWORD"),
+  redisHost:getEnv("REDIS_HOST"),
+  redisPort:getEnv("REDIS_PORT"),
 };
