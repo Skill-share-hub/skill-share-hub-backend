@@ -107,11 +107,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
 try{
   const email=req.body.email;
-  const otp=await sendOtpService(email);
+  await sendOtpService(email);
   res.status(200).json(
-    new ApiResponse('Otp sent successfully', {
-      otp
-    })
+    new ApiResponse('Otp sent successfully')
   ); 
 }catch(error){
 next(error);

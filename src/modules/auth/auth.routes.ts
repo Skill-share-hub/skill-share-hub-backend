@@ -9,6 +9,6 @@ const authRouter = Router();
 authRouter.post('/register', validate(registerSchema), register);
 authRouter.post('/login', validate(loginSchema), login);
 authRouter.post('/refresh', refresh);
-authRouter.post('/send-otp', sendOtp);
+authRouter.post('/send-otp', validate(registerSchema), sendOtp);
 
 export default authRouter;
