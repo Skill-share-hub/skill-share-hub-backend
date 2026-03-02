@@ -5,6 +5,8 @@ import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { loginUser, registerUser, refreshTokens, sendOtpService } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.types';
+import { User } from '../users/user.model';
+
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -105,13 +107,19 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 };
 
 export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
-try{
-  const email=req.body.email;
-  await sendOtpService(email);
-  res.status(200).json(
-    new ApiResponse('Otp sent successfully')
-  ); 
-}catch(error){
-next(error);
-}
+  try{
+    const email=req.body.email;
+
+    const existingUser = await User.findOne({ email }).lean();
+    if (existingUser) {
+      throw new ApiError(409, 'Email already exists');
+    }
+
+    await sendOtpService(email);
+    res.status(200).json(
+      new ApiResponse('Otp sent successfully')
+    ); 
+  }catch(error){
+    next(error);
+  }
 }
