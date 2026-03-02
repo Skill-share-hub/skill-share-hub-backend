@@ -3,10 +3,8 @@ import { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { refreshTokens, registerUser, sendOtpService, verifyOtpService } from './auth.service';
-import { RegisterInput } from './auth.validation';
-import { loginUser, refreshTokens, registerUser } from './auth.service';
-import { LoginInput, RegisterInput } from './auth.validation';
+import { loginUser, registerUser, refreshTokens, sendOtpService } from './auth.service';
+import { LoginInput, RegisterInput } from './auth.types';
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;

@@ -4,9 +4,9 @@ import { sendEmail } from '../../services/mail.service';
 import { ApiError } from '../../utils/ApiError';
 import { otpTemplate, registerTemplate } from '../../utils/email.templates';
 import generateOtp from '../../utils/generateOtp';
-import { hashPassword } from '../../utils/hash';
+import { comparePassword, hashPassword } from '../../utils/hash';
 import { User } from '../users/user.model';
-import { RegisterInput } from './auth.validation';
+import { RegisterInput,LoginInput } from './auth.types';
 import bcrypt from 'bcryptjs';
 
 export interface RegisterResponse {

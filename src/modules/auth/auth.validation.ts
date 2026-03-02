@@ -19,7 +19,7 @@ export const registerSchema = z
       .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
       .regex(/[a-z]/, 'Password must include at least one lowercase letter')
       .regex(/[0-9]/, 'Password must include at least one number'),
-  const { name, email, password, confirmPassword } = body as Record<string, unknown>;
+
 
     confirmPassword: z.string({
       error: 'Confirm password is required',
@@ -36,42 +36,16 @@ export const registerSchema = z
   })
   .transform(({ confirmPassword: _, ...rest }) => rest);
 
-  if (typeof password !== 'string' || password.length < 8) {
-    throw new ApiError(400, 'Password must be at least 8 characters');
-  }
-  if (confirmPassword !== password) {
-    throw new ApiError(400, 'Password and confirm password not match');
-  }
+export const loginSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address'),
 
-  return {
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password
-  };
-};
+  password: z
+    .string({ error: 'Password is required' })
+    .min(1, 'Password is required'),
+});
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
 
-export const validateLoginInput = (body: unknown): LoginInput => {
-  if (!body || typeof body !== 'object') {
-    throw new ApiError(400, 'Request body is required');
-  }
-
-  const { email, password } = body as Record<string, unknown>;
-
-  if (typeof email !== 'string' || !email.trim()) {
-    throw new ApiError(400, 'Email is required');
-  }
-
-  if (typeof password !== 'string' || !password) {
-    throw new ApiError(400, 'Password is required');
-  }
-
-  return {
-    email: email.trim().toLowerCase(),
-    password
-  };
-};
