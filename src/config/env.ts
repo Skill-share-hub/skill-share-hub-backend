@@ -30,5 +30,6 @@ export const env = {
   jwtRefreshSecret: getEnv('JWT_REFRESH_SECRET', 'dev_refresh_secret_change_me'),
   jwtAccessExpiresIn: getEnv('JWT_ACCESS_EXPIRES_IN', '15m'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
-  clientUrl:getEnv("CLIENT_URL")
+  clientUrl: getEnv("CLIENT_URL"),
+  googleClientId: getEnv("GOOGLE_CLIENT_ID")
 };

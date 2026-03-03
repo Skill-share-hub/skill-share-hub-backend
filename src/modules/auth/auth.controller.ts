@@ -103,3 +103,58 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
+
+import { OAuth2Client } from 'google-auth-library';
+import { googleLoginUser } from './auth.service';
+
+const client = new OAuth2Client(env.googleClientId);
+
+export const googleLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      throw new ApiError(400, 'Google credential missing');
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: env.googleClientId
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      throw new ApiError(401, 'Invalid Google token');
+    }
+
+    const result = await googleLoginUser(payload);
+    const isProduction = env.nodeEnv === 'production';
+
+    res.cookie('accessToken', result.tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: ACCESS_COOKIE_MAX_AGE
+    });
+
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: REFRESH_COOKIE_MAX_AGE
+    });
+
+    res.status(200).json(
+      new ApiResponse('Google login successful', {
+        user: result.user
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};

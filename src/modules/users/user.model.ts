@@ -8,9 +8,13 @@ export interface IUser {
   name: string;
   avatarUrl?: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string; // ✅ optional for Google users
   role: UserRole;
   verificationStatus: VerificationStatus;
+
+  // 🔐 Auth Provider
+  provider: "local" | "google";
+  googleId?: string;
 
   // Student Profile (Optional)
   studentProfile?: {
@@ -45,13 +49,15 @@ const userSchema = new Schema<IUser>(
     // Basic
     name: { type: String, required: true },
     avatarUrl: { type: String, default: "" },
+
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
     },
-    passwordHash: { type: String, required: true },
+
+    passwordHash: { type: String }, // ✅ not required
 
     role: {
       type: String,
@@ -63,6 +69,17 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["pending", "verified", "rejected"],
       default: "pending",
+    },
+
+    // 🔐 Google Auth Fields
+    provider: {
+      type: String,
+      enum: ["local", "google"],
+      default: "local",
+    },
+
+    googleId: {
+      type: String,
     },
 
     // Student Profile
@@ -97,7 +114,5 @@ const userSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
-
-
 
 export const User = model<IUser>("User", userSchema);
