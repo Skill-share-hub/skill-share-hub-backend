@@ -105,6 +105,60 @@ export const loginUser = async (input: LoginInput): Promise<RegisterResponse> =>
   };
 };
 
+export const googleLoginUser = async (payload: any): Promise<RegisterResponse> => {
+  const { email, name, picture, sub } = payload;
+
+  if (!email) {
+    throw new ApiError(400, 'Google email not provided');
+  }
+
+  let user = await User.findOne({ email });
+
+  // If user exists but is local → link account
+  if (user && user.provider === 'local') {
+    user.provider = 'google';
+    user.googleId = sub;
+    user.verificationStatus = 'verified';
+    user.avatarUrl = picture || user.avatarUrl;
+    await user.save();
+  }
+
+  // If no user → create new Google user
+  if (!user) {
+    user = await User.create({
+      name,
+      email,
+      avatarUrl: picture,
+      provider: 'google',
+      googleId: sub,
+      verificationStatus: 'verified',
+      role: 'student'
+    });
+  }
+
+  const tokenPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    tokens: {
+      accessToken,
+      refreshToken
+    }
+  };
+};
+
 export const refreshTokens = async (refreshToken: string): Promise<RegisterResponse> => {
   try {
     const decoded = verifyRefreshToken(refreshToken);

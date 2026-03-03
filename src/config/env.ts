@@ -31,6 +31,7 @@ export const env = {
   jwtAccessExpiresIn: getEnv('JWT_ACCESS_EXPIRES_IN', '15m'),
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
   clientUrl: getEnv("CLIENT_URL"),
+  googleClientId: getEnv("GOOGLE_CLIENT_ID")
   redisUrl: getEnv("REDIS_URL"),
   emailHost: getEnv("MAIL_HOST"),
   emailPort: parsePort(getEnv("MAIL_PORT", "587")),
