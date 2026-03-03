@@ -1,9 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { loginUser, registerUser, refreshTokens, sendOtpService, resetPasswordService } from './auth.service';
+import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.types';
 
 
@@ -107,9 +106,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
 };
 
 export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
-  try{
+  try{    
     const email=req.body.email;
-    await sendOtpService(email);
+    await sendRegisterOtpService(email);
     res.status(200).json(
       new ApiResponse('Otp sent successfully')
     ); 
@@ -118,10 +117,11 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction):P
   }
 }
 
+
 export const forgotPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
   try{
     const email=req.body.email;
-    await sendOtpService(email);
+    await sendForgotPasswordOtpService(email);
     res.status(200).json(
       new ApiResponse('Otp sent successfully')
     ); 

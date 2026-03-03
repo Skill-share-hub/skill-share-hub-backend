@@ -143,10 +143,22 @@ export const refreshTokens = async (refreshToken: string): Promise<RegisterRespo
   }
 };
 
-export const sendOtpService = async (email: string): Promise<string> => {
+export const sendRegisterOtpService = async (email: string): Promise<string> => {
+   const user = await User.findOne({ email }).lean();
+  if (user) {
+    throw new ApiError(409, 'User already exists');  
+  }
+  const otp = generateOtp();
+  const otpHashed=await bcrypt.hash(otp,10)
+  await redisClient.set(`otp:${email}`,otpHashed , {EX: 60 * 5});
+  await sendEmail(email,'Otp Verification',otpTemplate(otp));
+  return otp;
+};
+
+export const sendForgotPasswordOtpService = async (email: string): Promise<string> => {
   const user = await User.findOne({ email }).lean();
   if (!user) {
-    throw new ApiError(404, 'User not found');
+    throw new ApiError(404, 'User not found');  
   }
   const otp = generateOtp();
   const otpHashed=await bcrypt.hash(otp,10)
