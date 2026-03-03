@@ -1,11 +1,13 @@
 import { Router } from 'express';
 
 import { validate } from '../../middlewares/validate.middleware';
-import { login, refresh, register } from './auth.controller';
-import { validateLoginInput, validateRegisterInput } from './auth.validation';
 import { googleLogin } from './auth.controller';
 import { login, refresh, register, sendOtp, forgotPassword, resetPassword } from './auth.controller';
-import { forgotPasswordSchema, loginSchema, otpSchema, registerSchema, resetPasswordSchema } from './auth.validation';
+import { forgotPasswordSchema } from './validators/forgotPasswordSchema';
+import { loginSchema } from './validators/loginSchema';
+import { otpSchema } from './validators/otpSchema';
+import { registerSchema } from './validators/registerSchema';
+import { resetPasswordSchema } from './validators/resetPasswordSchema';
 
 const authRouter = Router();
 

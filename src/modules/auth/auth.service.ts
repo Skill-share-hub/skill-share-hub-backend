@@ -118,7 +118,7 @@ export const googleLoginUser = async (payload: any): Promise<RegisterResponse> =
   if (user && user.provider === 'local') {
     user.provider = 'google';
     user.googleId = sub;
-    user.verificationStatus = 'verified';
+    user.isVerified = true;
     user.avatarUrl = picture || user.avatarUrl;
     await user.save();
   }
@@ -131,7 +131,7 @@ export const googleLoginUser = async (payload: any): Promise<RegisterResponse> =
       avatarUrl: picture,
       provider: 'google',
       googleId: sub,
-      verificationStatus: 'verified',
+      isVerified: true,
       role: 'student'
     });
   }
