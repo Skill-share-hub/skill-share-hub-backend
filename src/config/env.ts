@@ -32,4 +32,14 @@ export const env = {
   jwtRefreshExpiresIn: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
   clientUrl: getEnv("CLIENT_URL"),
   googleClientId: getEnv("GOOGLE_CLIENT_ID")
+  redisUrl: getEnv("REDIS_URL"),
+  emailHost: getEnv("MAIL_HOST"),
+  emailPort: parsePort(getEnv("MAIL_PORT", "587")),
+  emailSecure: getEnv("MAIL_SECURE", "false") === "true",
+  emailUser: getEnv("MAIL_USER"), 
+  emailPass: getEnv("MAIL_PASS"),
+  redisUsername:getEnv("REDIS_USERNAME"),
+  redisPassword:getEnv("REDIS_PASSWORD"),
+  redisHost:getEnv("REDIS_HOST"),
+  redisPort:getEnv("REDIS_PORT"),
 };

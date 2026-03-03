@@ -1,5 +1,5 @@
 import { Schema, model, Types } from "mongoose";
-import { UserRole, VerificationStatus, PayoutMethod } from "./user.types";
+import { UserRole, PayoutMethod } from "./user.types";
 
 export interface IUser {
   _id: Types.ObjectId;
@@ -10,7 +10,7 @@ export interface IUser {
   email: string;
   passwordHash?: string; // ✅ optional for Google users
   role: UserRole;
-  verificationStatus: VerificationStatus;
+  isVerified: boolean;
 
   // 🔐 Auth Provider
   provider: "local" | "google";
@@ -65,10 +65,9 @@ const userSchema = new Schema<IUser>(
       default: "student",
     },
 
-    verificationStatus: {
-      type: String,
-      enum: ["pending", "verified", "rejected"],
-      default: "pending",
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
 
     // 🔐 Google Auth Fields

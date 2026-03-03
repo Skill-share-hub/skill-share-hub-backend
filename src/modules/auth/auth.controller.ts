@@ -1,10 +1,11 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { loginUser, refreshTokens, registerUser } from './auth.service';
-import { LoginInput, RegisterInput } from './auth.validation';
+import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService } from './auth.service';
+import { LoginInput, RegisterInput } from './auth.types';
+
+
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -158,3 +159,39 @@ export const googleLogin = async (
     next(error);
   }
 };
+export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
+  try{    
+    const email=req.body.email;
+    await sendRegisterOtpService(email);
+    res.status(200).json(
+      new ApiResponse('Otp sent successfully')
+    ); 
+  }catch(error){
+    next(error);
+  }
+}
+
+
+export const forgotPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+  try{
+    const email=req.body.email;
+    await sendForgotPasswordOtpService(email);
+    res.status(200).json(
+      new ApiResponse('Otp sent successfully')
+    ); 
+  }catch(error){
+    next(error);
+  }
+}
+
+export const resetPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+  try{
+    const {email,password,otp}=req.body;
+   await resetPasswordService(email,password,otp);
+   res.status(200).json(
+     new ApiResponse('Password reset successfully')
+   ); 
+  }catch(error){
+    next(error);
+  }
+}

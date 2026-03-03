@@ -4,12 +4,19 @@ import { validate } from '../../middlewares/validate.middleware';
 import { login, refresh, register } from './auth.controller';
 import { validateLoginInput, validateRegisterInput } from './auth.validation';
 import { googleLogin } from './auth.controller';
+import { login, refresh, register, sendOtp, forgotPassword, resetPassword } from './auth.controller';
+import { forgotPasswordSchema, loginSchema, otpSchema, registerSchema, resetPasswordSchema } from './auth.validation';
 
 const authRouter = Router();
 
-authRouter.post('/register', validate(validateRegisterInput), register);
-authRouter.post('/login', validate(validateLoginInput), login);
+authRouter.post('/register', validate(registerSchema), register);
+authRouter.post('/login', validate(loginSchema), login);
 authRouter.post('/refresh', refresh);
 authRouter.post('/google', googleLogin);
+authRouter.post('/send-otp', validate(otpSchema), sendOtp);
+authRouter.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+authRouter.post('/reset-password', validate(resetPasswordSchema), resetPassword);
+
+
 
 export default authRouter;

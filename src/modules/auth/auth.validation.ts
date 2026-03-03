@@ -1,62 +1,88 @@
-import { ApiError } from '../../utils/ApiError';
+import { z } from 'zod';
 
-export interface RegisterInput {
-  name: string;
-  email: string;
-  password: string;
-}
+export const baseSchema = z
+  .object({
+    name: z
+      .string({ error: 'Name is required' })
+      .trim()
+      .min(2, 'Name must be at least 2 characters'),
 
-export const validateRegisterInput = (body: unknown): RegisterInput => {
-  if (!body || typeof body !== 'object') {
-    throw new ApiError(400, 'Request body is required');
-  }
+    email: z
+      .string({ error: 'Email is required' })
+      .trim()
+      .toLowerCase()
+      .email('Invalid email address'),
 
-  const { name, email, password, confirmPassword } = body as Record<string, unknown>;
+    password: z
+      .string({ error: 'Password is required' })
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must include at least one number'),
 
-  if (typeof name !== 'string' || name.trim().length < 2) {
-    throw new ApiError(400, 'Name must be at least 2 characters');
-  }
 
-  if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new ApiError(400, 'Invalid email address');
-  }
+    confirmPassword: z.string({
+      error: 'Confirm password is required',
+    })
+  });
 
-  if (typeof password !== 'string' || password.length < 8) {
-    throw new ApiError(400, 'Password must be at least 8 characters');
-  }
-  if (confirmPassword !== password) {
-    throw new ApiError(400, 'Password and confirm password not match');
-  }
+export const otpSchema = baseSchema.
+  refine((data) => data.password === data.confirmPassword, {
+    message: 'Password and confirm password do not match',
+    path: ['confirmPassword'],
+  })
+  .transform(({ confirmPassword: _, ...rest }) => rest);
 
-  return {
-    name: name.trim(),
-    email: email.trim().toLowerCase(),
-    password
-  };
-};
+export const registerSchema = baseSchema.extend({
+  otp: z
+    .string({ error: 'OTP is required' })
+    .trim()
+    .min(1, 'OTP is required'),
+}).
+  refine((data) => data.password === data.confirmPassword, {
+    message: 'Password and confirm password do not match',
+    path: ['confirmPassword'],
+  })
+  .transform(({ confirmPassword: _, ...rest }) => rest);
 
-export interface LoginInput {
-  email: string;
-  password: string;
-}
+export const loginSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address'),
 
-export const validateLoginInput = (body: unknown): LoginInput => {
-  if (!body || typeof body !== 'object') {
-    throw new ApiError(400, 'Request body is required');
-  }
+  password: z
+    .string({ error: 'Password is required' })
+    .min(1, 'Password is required'),
+});
 
-  const { email, password } = body as Record<string, unknown>;
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address'),
+});
 
-  if (typeof email !== 'string' || !email.trim()) {
-    throw new ApiError(400, 'Email is required');
-  }
+export const resetPasswordSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .email('Invalid email address'),
 
-  if (typeof password !== 'string' || !password) {
-    throw new ApiError(400, 'Password is required');
-  }
+  password: z
+    .string({ error: 'Password is required' })
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must include at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must include at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must include at least one number'),
 
-  return {
-    email: email.trim().toLowerCase(),
-    password
-  };
-};
+  otp: z
+    .string({ error: 'OTP is required' })
+    .trim()
+    .min(1, 'OTP is required'),
+});
+
+
