@@ -70,6 +70,25 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
   }
 };
 
+export const logout =async (req:Request,res:Response,next:NextFunction):Promise<void>=>{
+  if(!req.user?._id){
+    throw new ApiError(404,"User Not Found")
+  }
+    const isProduction = env.nodeEnv === 'production';
+   res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict'
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict'
+    });
+    res.status(200).json({ message: "Logged out successfully" });
+}
+
 export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const refreshToken = req.cookies?.refreshToken;
