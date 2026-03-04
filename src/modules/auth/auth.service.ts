@@ -246,3 +246,10 @@ export const resetPasswordService = async (email: string, password: string,otp:s
   const passwordHash = await hashPassword(password);
   await User.updateOne({ email }, { passwordHash });
 };
+
+export const logoutUser = () => {
+  return {
+    success: true,
+    message: "Logged out successfully",
+  };
+};
