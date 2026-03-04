@@ -1,9 +1,11 @@
+import { googleLoginUser } from './auth.service';
 import { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
 import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.types';
+import { OAuth2Client } from 'google-auth-library';
 
 
 
@@ -15,7 +17,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     const payload = req.body as RegisterInput;
     const result = await registerUser(payload);
     const isProduction = env.nodeEnv === 'production';
-
+    
     res.cookie('accessToken', result.tokens.accessToken, {
       httpOnly: true,
       secure: isProduction,
@@ -42,6 +44,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    console.log("called")
     const payload = req.body as LoginInput;
     const result = await loginUser(payload);
     const isProduction = env.nodeEnv === 'production';
@@ -70,6 +73,8 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
   }
 };
 
+
+
 export const logout =async (req:Request,res:Response,next:NextFunction):Promise<void>=>{
   if(!req.user?._id){
     throw new ApiError(404,"User Not Found")
@@ -88,6 +93,9 @@ export const logout =async (req:Request,res:Response,next:NextFunction):Promise<
     });
     res.status(200).json({ message: "Logged out successfully" });
 }
+
+
+
 
 export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -124,8 +132,6 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
-import { OAuth2Client } from 'google-auth-library';
-import { googleLoginUser } from './auth.service';
 
 const client = new OAuth2Client(env.googleClientId);
 
