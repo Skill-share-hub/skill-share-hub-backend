@@ -23,6 +23,7 @@ export interface IUser {
   tutorProfile?: {
     bio: string;
     skills: string[];
+    createdCourses : Types.ObjectId[];
     experience?: string;
     totalCreditsEarned: number;
     monetizationEligible: boolean;
@@ -89,6 +90,13 @@ const userSchema = new Schema<IUser>(
       bio: { type: String, default: "" },
       skills: { type: [String], default: [] },
       experience: { type: String },
+
+      createdCourses : [
+        {
+          type : Schema.Types.ObjectId,
+          ref : "Course"
+        }
+      ],
 
       totalCreditsEarned: { type: Number, default: 0 },
       monetizationEligible: { type: Boolean, default: false },

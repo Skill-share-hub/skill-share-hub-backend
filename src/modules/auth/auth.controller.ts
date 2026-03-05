@@ -5,8 +5,10 @@ import { ApiResponse } from '../../utils/ApiResponse';
 import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.types';
 
+import { OAuth2Client } from 'google-auth-library';
+import { googleLoginUser } from './auth.service';
 
-
+const client = new OAuth2Client(env.googleClientId);
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
@@ -105,11 +107,6 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
   }
 };
 
-import { OAuth2Client } from 'google-auth-library';
-import { googleLoginUser } from './auth.service';
-
-const client = new OAuth2Client(env.googleClientId);
-
 export const googleLogin = async (
   req: Request,
   res: Response,
@@ -159,6 +156,7 @@ export const googleLogin = async (
     next(error);
   }
 };
+
 export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
   try{    
     const email=req.body.email;
@@ -170,7 +168,6 @@ export const sendOtp = async (req: Request, res: Response, next: NextFunction):P
     next(error);
   }
 }
-
 
 export const forgotPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
   try{

@@ -8,8 +8,10 @@ export const validate = (schema: z.ZodType): RequestHandler => {
 
     if (!result.success) {
       const message = result.error.issues
-        .map((issue) => issue.message)
-        .join(', ');
+        .map((issue,i) => {
+          return String(issue.path[i]) + " ---> " + issue.message
+        })
+        .join(' | ');
       throw new ApiError(400, message);
     }
 

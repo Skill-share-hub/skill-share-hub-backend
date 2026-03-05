@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { ICourse } from "./course.types";
+import type { ICourse } from "./course.validation";
 
 const courseSchema = new Schema<ICourse>({
   tutorId : {
@@ -67,6 +67,6 @@ const courseSchema = new Schema<ICourse>({
     type : Number,
     default : 0
   }
-});
+},{timestamps : true});
 
 export const Course = model<ICourse>("Course",courseSchema);
