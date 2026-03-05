@@ -4,26 +4,22 @@ import { UserRole, PayoutMethod } from "./user.types";
 export interface IUser {
   _id: Types.ObjectId;
 
-  // Basic Auth Data
   name: string;
   avatarUrl?: string;
   email: string;
-  passwordHash?: string; // ✅ optional for Google users
+  passwordHash?: string;
   role: UserRole;
   isVerified: boolean;
 
-  // 🔐 Auth Provider
   provider: "local" | "google";
   googleId?: string;
 
-  // Student Profile (Optional)
   studentProfile?: {
     bio: string;
     skills: string[];
     interests?: string[];
   };
 
-  // Tutor Profile (Optional)
   tutorProfile?: {
     bio: string;
     skills: string[];
