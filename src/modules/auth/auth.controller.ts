@@ -2,8 +2,10 @@ import { NextFunction, Request, Response } from 'express';
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService } from './auth.service';
+import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService, logoutUser, googleLoginUser } from './auth.service';
 import { LoginInput, RegisterInput } from './auth.types';
+import { OAuth2Client } from 'google-auth-library';
+
 
 import { OAuth2Client } from 'google-auth-library';
 import { googleLoginUser } from './auth.service';
@@ -72,6 +74,30 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
   }
 };
 
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const result = logoutUser();
+
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Logout failed",
+    });
+  }
+};
+
 export const refresh = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const refreshToken = req.cookies?.refreshToken;
@@ -106,6 +132,9 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
+
+
+const client = new OAuth2Client(env.googleClientId);
 
 export const googleLogin = async (
   req: Request,
