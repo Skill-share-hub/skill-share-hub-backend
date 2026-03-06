@@ -1,28 +1,29 @@
 import { Schema, model, Types } from "mongoose";
-import { UserRole, VerificationStatus, PayoutMethod } from "./user.types";
+import { UserRole, PayoutMethod } from "./user.types";
 
 export interface IUser {
   _id: Types.ObjectId;
 
-  // Basic Auth Data
   name: string;
   avatarUrl?: string;
   email: string;
-  passwordHash: string;
+  passwordHash?: string;
   role: UserRole;
-  verificationStatus: VerificationStatus;
+  isVerified: boolean;
 
-  // Student Profile (Optional)
+  provider: "local" | "google";
+  googleId?: string;
+
   studentProfile?: {
     bio: string;
     skills: string[];
     interests?: string[];
   };
 
-  // Tutor Profile (Optional)
   tutorProfile?: {
     bio: string;
     skills: string[];
+    createdCourses : Types.ObjectId[];
     experience?: string;
     totalCreditsEarned: number;
     monetizationEligible: boolean;
@@ -45,13 +46,15 @@ const userSchema = new Schema<IUser>(
     // Basic
     name: { type: String, required: true },
     avatarUrl: { type: String, default: "" },
+
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
     },
-    passwordHash: { type: String, required: true },
+
+    passwordHash: { type: String }, // ✅ not required
 
     role: {
       type: String,
@@ -59,10 +62,20 @@ const userSchema = new Schema<IUser>(
       default: "student",
     },
 
-    verificationStatus: {
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    // 🔐 Google Auth Fields
+    provider: {
       type: String,
-      enum: ["pending", "verified", "rejected"],
-      default: "pending",
+      enum: ["local", "google"],
+      default: "local",
+    },
+
+    googleId: {
+      type: String,
     },
 
     // Student Profile
@@ -77,6 +90,13 @@ const userSchema = new Schema<IUser>(
       bio: { type: String, default: "" },
       skills: { type: [String], default: [] },
       experience: { type: String },
+
+      createdCourses : [
+        {
+          type : Schema.Types.ObjectId,
+          ref : "Course"
+        }
+      ],
 
       totalCreditsEarned: { type: Number, default: 0 },
       monetizationEligible: { type: Boolean, default: false },
@@ -97,7 +117,5 @@ const userSchema = new Schema<IUser>(
   },
   { timestamps: true }
 );
-
-
 
 export const User = model<IUser>("User", userSchema);

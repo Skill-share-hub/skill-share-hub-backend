@@ -18,6 +18,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   res.status(statusCode).json({
     success: false,
+    status : statusCode,
     message: error.message || 'Internal server error',
     ...(env.nodeEnv !== 'production' ? { stack: error.stack } : {})
   });

@@ -1,9 +1,15 @@
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../config/jwt';
+import { redisClient } from '../../config/redis';
+import { sendEmail } from '../../services/mail.service';
 import { ApiError } from '../../utils/ApiError';
-import { hashPassword } from '../../utils/hash';
+import { otpTemplate, registerTemplate } from '../../utils/email.templates';
+import generateOtp from '../../utils/generateOtp';
+import { comparePassword, hashPassword } from '../../utils/hash';
 import { User } from '../users/user.model';
 import { RefreshToken } from './auth.model';
 import { RegisterInput } from './auth.validation';
+import { RegisterInput,LoginInput } from './auth.types';
+import bcrypt from 'bcryptjs';
 
 export interface RegisterResponse {
   user: {
@@ -26,12 +32,111 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterRespon
   }
 
   const passwordHash = await hashPassword(input.password);
+  const isVerified=await verifyOtpService(input.email,input.otp);
 
+  if(!isVerified){
+    throw new ApiError(401, 'Invalid otp');
+  }
   const user = await User.create({
     name: input.name,
     email: input.email,
-    passwordHash
+    passwordHash,
+    isVerified:true
   });
+
+  const tokenPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+  await sendEmail(
+  user.email,
+  `Welcome to SkillShare Hub, ${user.name}! 🎉`,
+  registerTemplate(user.name)
+);
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    tokens: {
+      accessToken,
+      refreshToken
+    }
+  };
+};
+
+export const loginUser = async (input: LoginInput): Promise<RegisterResponse> => {
+  const user = await User.findOne({ email: input.email }).lean();
+
+  if (!user || user.passwordHash === undefined) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const isPasswordValid = await comparePassword(input.password, user.passwordHash);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const tokenPayload = {
+    userId: user._id.toString(),
+    email: user.email,
+    role: user.role
+  };
+
+  const accessToken = generateAccessToken(tokenPayload);
+  const refreshToken = generateRefreshToken(tokenPayload);
+
+  return {
+    user: {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      role: user.role
+    },
+    tokens: {
+      accessToken,
+      refreshToken
+    }
+  };
+};
+
+export const googleLoginUser = async (payload: any): Promise<RegisterResponse> => {
+  const { email, name, picture, sub } = payload;
+
+  if (!email) {
+    throw new ApiError(400, 'Google email not provided');
+  }
+
+  let user = await User.findOne({ email });
+
+  // If user exists but is local → link account
+  if (user && user.provider === 'local') {
+    user.provider = 'google';
+    user.googleId = sub;
+    user.isVerified = true;
+    user.avatarUrl = picture || user.avatarUrl;
+    await user.save();
+  }
+
+  // If no user → create new Google user
+  if (!user) {
+    user = await User.create({
+      name,
+      email,
+      avatarUrl: picture,
+      provider: 'google',
+      googleId: sub,
+      isVerified: true,
+      role: 'student'
+    });
+  }
 
   const tokenPayload = {
     userId: user._id.toString(),
@@ -110,4 +215,61 @@ export const refreshTokens = async (refreshToken: string): Promise<RegisterRespo
     }
     throw new ApiError(401, 'Invalid refresh token');
   }
+};
+
+export const sendRegisterOtpService = async (email: string): Promise<string> => {
+   const user = await User.findOne({ email }).lean();
+  if (user) {
+    throw new ApiError(409, 'User already exists');  
+  }
+  const otp = generateOtp();
+  const otpHashed=await bcrypt.hash(otp,10)
+  await redisClient.set(`otp:${email}`,otpHashed , {EX: 60 * 5});
+  await sendEmail(email,'Otp Verification',otpTemplate(otp));
+  return otp;
+};
+
+export const sendForgotPasswordOtpService = async (email: string): Promise<string> => {
+  const user = await User.findOne({ email }).lean();
+  if (!user) {
+    throw new ApiError(404, 'User not found');  
+  }
+  const otp = generateOtp();
+  const otpHashed=await bcrypt.hash(otp,10)
+  await redisClient.set(`otp:${email}`,otpHashed , {EX: 60 * 5});
+  await sendEmail(email,'Otp Verification',otpTemplate(otp));
+  return otp;
+};
+
+export const verifyOtpService = async (email: string, otp: string): Promise<boolean> => {
+  const otpHashed = await redisClient.get(`otp:${email}`);
+  if (!otpHashed) {
+    throw new ApiError(404, 'Otp not found');
+  }
+  const isVerified = await bcrypt.compare(otp, otpHashed);
+  if (!isVerified) {
+    throw new ApiError(401, 'Invalid otp');
+  }
+  await redisClient.del(`otp:${email}`);
+  return true;  
+};
+
+export const resetPasswordService = async (email: string, password: string,otp:string): Promise<void> => {
+  const user = await User.findOne({ email }).lean();
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  const isVerified=await verifyOtpService(email,otp)
+  if(!isVerified){
+    throw new ApiError(401, 'Invalid otp');
+  }
+  const passwordHash = await hashPassword(password);
+  await User.updateOne({ email }, { passwordHash });
+};
+
+export const logoutUser = () => {
+  return {
+    success: true,
+    message: "Logged out successfully",
+  };
 };

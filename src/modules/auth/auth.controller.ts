@@ -1,10 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
-
 import { env } from '../../config/env';
 import { ApiError } from '../../utils/ApiError';
 import { ApiResponse } from '../../utils/ApiResponse';
-import { refreshTokens, registerUser } from './auth.service';
-import { RegisterInput } from './auth.validation';
+import { loginUser, registerUser, refreshTokens,resetPasswordService, sendRegisterOtpService, sendForgotPasswordOtpService, logoutUser, googleLoginUser } from './auth.service';
+import { LoginInput, RegisterInput } from './auth.types';
+import { OAuth2Client } from 'google-auth-library';
 
 const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -36,6 +36,60 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     );
   } catch (error) {
     next(error);
+  }
+};
+
+export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const payload = req.body as LoginInput;
+    const result = await loginUser(payload);
+    const isProduction = env.nodeEnv === 'production';
+
+    res.cookie('accessToken', result.tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: ACCESS_COOKIE_MAX_AGE
+    });
+
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: REFRESH_COOKIE_MAX_AGE
+    });
+
+    res.status(200).json(
+      new ApiResponse('User logged in successfully', {
+        user: result.user
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const result = logoutUser();
+
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Logout failed",
+    });
   }
 };
 
@@ -73,3 +127,92 @@ export const refresh = async (req: Request, res: Response, next: NextFunction): 
     next(error);
   }
 };
+
+
+const client = new OAuth2Client(env.googleClientId);
+
+export const googleLogin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      throw new ApiError(400, 'Google credential missing');
+    }
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: env.googleClientId
+    });
+
+    const payload = ticket.getPayload();
+
+    if (!payload) {
+      throw new ApiError(401, 'Invalid Google token');
+    }
+
+    const result = await googleLoginUser(payload);
+    const isProduction = env.nodeEnv === 'production';
+
+    res.cookie('accessToken', result.tokens.accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: ACCESS_COOKIE_MAX_AGE
+    });
+
+    res.cookie('refreshToken', result.tokens.refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: REFRESH_COOKIE_MAX_AGE
+    });
+
+    res.status(200).json(
+      new ApiResponse('Google login successful', {
+        user: result.user
+      })
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendOtp = async (req: Request, res: Response, next: NextFunction):Promise<void> =>{
+  try{    
+    const email=req.body.email;
+    await sendRegisterOtpService(email);
+    res.status(200).json(
+      new ApiResponse('Otp sent successfully')
+    ); 
+  }catch(error){
+    next(error);
+  }
+}
+
+export const forgotPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+  try{
+    const email=req.body.email;
+    await sendForgotPasswordOtpService(email);
+    res.status(200).json(
+      new ApiResponse('Otp sent successfully')
+    ); 
+  }catch(error){
+    next(error);
+  }
+}
+
+export const resetPassword=async(req:Request,res:Response,next:NextFunction):Promise<void>=>{
+  try{
+    const {email,password,otp}=req.body;
+   await resetPasswordService(email,password,otp);
+   res.status(200).json(
+     new ApiResponse('Password reset successfully')
+   ); 
+  }catch(error){
+    next(error);
+  }
+}
