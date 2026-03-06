@@ -3,9 +3,13 @@ import { authenticate } from '../../middlewares/auth.middleware';
 import { authorizeRoles } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { CourseSchema, UpdateCourseSchema, UpdateStatusSchema } from './course.validation';
-import { changeCourseStatus, createCourse, updateCourse } from './course.controller';
+import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse } from './course.controller';
 
 const router = Router();
+
+router.get('/', getAllCourses);
+
+router.get('/:id', getSingleCourse)
 
 router.post('/',
   authenticate,
@@ -26,7 +30,7 @@ router.patch('/:id',
   authorizeRoles("tutor", "premiumTutor","student"),
   validate(UpdateStatusSchema),
   changeCourseStatus
-)
+);
 
 
 export default router ;

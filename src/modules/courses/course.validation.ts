@@ -27,7 +27,6 @@ const baseSchema = z.object({
   price : z
   .number()
   .nonnegative("Price cannot be negative")
-  .min(1, "Price must be at least 1")
   .optional(),
 
   category : z
@@ -41,17 +40,21 @@ const baseSchema = z.object({
   courseType : z
   .enum(["credit","paid"]),
 
+  courseSkills : z
+  .array(z.string())
+  .min(1, "Skills cannot be empty")
+  .max(10, "Skills cannot have more than 10"),
+
   creditCost : z
   .number()
   .nonnegative("Price cannot be negative")
-  .min(1, "Price must be at least 1")
   .optional(),
 
   status : z
   .enum(["pending","published","draft"]),
 
-  thumbnailUrl : z.string(),
-
+  thumbnailUrl : z.string().optional(),
+  courseLevel : z.enum(["beginner","intermediate","expert"])
 })
 
 export const CourseSchema = baseSchema.extend({
@@ -78,14 +81,56 @@ export const CourseSchema = baseSchema.extend({
 },{
     message: "Paid courses require price. Credit courses require creditCost.",
     path: ["courseType"]
-  })
+})
 
 export const UpdateCourseSchema = baseSchema.partial()
-
 
 export const UpdateStatusSchema = z.object({
   status : z.enum(["pending","published","draft"])
 });
 
+export const QuerySchema = z.object({
+  q : z
+  .string()
+  .trim()
+  .min(2, "Search string must be at least 2 characters long")
+  .max(50, "Search string cannot exceed 50 characters")
+  .optional(),
+
+  limit : z
+  .string()
+  .min(1, 'Limit must be at least 1')
+  .max(100, 'Limit cannot exceed 100')
+  .transform(val => Number(val))
+  .default(10),
+
+  page : z
+  .string()
+  .min(1, 'Page must be at least 1')
+  .transform(val => Number(val))
+  .default(1),
+
+  c : z
+  .string()
+  .min(3, "Minimum 3 characters needed!")
+  .max(50,"Maximum 50 characters allowed!")
+  .lowercase()
+  .optional(),
+
+  type : z
+  .enum(["credit","paid"])
+  .optional(),
+
+  sort : z
+  .enum(["latest","popular"])
+  .optional(),
+
+  recommended : z
+  .enum(["true","false"])
+  .default("false")
+  .transform(val => val === "true")
+});
+
+export type TQuery = z.infer<typeof QuerySchema>
 export type PCourse = z.infer<typeof UpdateStatusSchema>
 export type ICourse = z.infer<typeof CourseSchema>;

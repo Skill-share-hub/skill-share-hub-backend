@@ -17,7 +17,7 @@ const courseSchema = new Schema<ICourse>({
   },
   price : {
     type : Number,
-    required : true
+    default : 0
   },
   category : {
     type : String,
@@ -43,9 +43,20 @@ const courseSchema = new Schema<ICourse>({
     required : true,
     enum : ["credit","paid"]
   },
+
+  courseLevel : {
+    type : String,
+    required : true,
+    enum : ["beginner","intermediate","expert"]
+  },
+
+  courseSkills : {
+    type : [String],
+    default : ["No skills"]
+  },
+  
   creditCost : {
     type : Number,
-    required : true,
     default : 0
   },
   ratingsAverage : {
