@@ -10,7 +10,8 @@ import { checkToken } from "../../utils/checkToken";
 export const createCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
     const payload = req.body as ICourse ;
-    const course = await makeCourse(payload,req.user?._id,req.user?.role);
+    const file = req.file as Express.Multer.File & { location: string };
+    const course = await makeCourse(payload, req.user?._id, req.user?.role , file?.location ?? "");
 
     const user = await User.findOneAndUpdate({_id : req.user?._id},{
       $push: { "tutorProfile.createdCourses": course._id }

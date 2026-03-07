@@ -22,12 +22,14 @@ const baseSchema = z.object({
   description : z
   .string()
   .min(5,"Minimum of 5 characters!")
-  .max(500,"Maximum of 500 characters!"),
+  .max(1000,"Maximum of 1000 characters!"),
 
   price : z
-  .number()
-  .nonnegative("Price cannot be negative")
-  .optional(),
+  .string()
+  .regex(/^\d+(\.\d{1,2})?$/, "Invalid price format")
+  .transform(Number)
+  .refine(val => val >= 0, "Price must be positive or zero")
+  .default(0),
 
   category : z
   .string()
@@ -43,18 +45,24 @@ const baseSchema = z.object({
   courseSkills : z
   .array(z.string())
   .min(1, "Skills cannot be empty")
-  .max(10, "Skills cannot have more than 10"),
+  .max(10, "Skills cannot have more than 10")
+  .default(["No Skills"]),
 
   creditCost : z
-  .number()
-  .nonnegative("Price cannot be negative")
-  .optional(),
+  .string()
+  .regex(/^\d+(\.\d{1,2})?$/, "Invalid price format")
+  .transform(Number)
+  .refine(val => val >= 0, "Credits must be positive or zero")
+  .default(0),
 
   status : z
   .enum(["pending","published","draft"]),
 
   thumbnailUrl : z.string().optional(),
-  courseLevel : z.enum(["beginner","intermediate","expert"])
+  courseLevel : z
+  .string()
+  .transform(val => val.toLowerCase())
+  .pipe(z.enum(["beginner", "intermediate", "expert"]))
 })
 
 export const CourseSchema = baseSchema.extend({

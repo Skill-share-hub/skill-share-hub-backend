@@ -71,7 +71,6 @@ const courseSchema = new Schema<ICourse>({
   },
   thumbnailUrl : {
     type : String,
-    required : true,
     default : ""
   },
   totalEnrollments : {
