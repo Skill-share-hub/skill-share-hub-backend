@@ -36,6 +36,14 @@ npm run dev             # http://localhost:5000
 | `GET` | `/api/users/profile` | Get user profile |
 | `PUT` | `/api/users/profile` | Update user profile |
 
+| Method | Endpoint | Description | Payload | Params | Query |
+|---|---|---|---|---|---|
+| `GET` | `/api/courses` | Get all courses | - | - | `q(search)`, `limit(items)`, `page(page number)`, `c(category)`, `type(credit/paid)`, `sort(latest/popular)`, `recommended(true/false)` |
+| `GET` | `/api/courses/:id` | Get single course | - | `id` | - |
+| `POST` | `/api/courses` | Create course | `title`, `description`, `price`, `category`, `contentModules[]`, `courseType`, `courseSkills[]`, `creditCost`, `status`, `courseLevel`, `thumbnailUrl(file)` | - | - |
+| `PUT` | `/api/courses/:id` | Update course | Same fields as create but **optional** | `id` | - |
+| `PATCH` | `/api/courses/:id` | Change course status | `status` | `id` | - |
+
 ## Scripts
 
 | Command | Description |
