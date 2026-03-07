@@ -5,7 +5,7 @@ import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
 
-export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:string) => {
+export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:string , thumbnailUrl:string) => {
 
   const {
     category,
@@ -16,7 +16,6 @@ export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:str
     description,
     price,
     status,
-    thumbnailUrl,
     courseLevel,
     title
   } = input;
@@ -39,7 +38,7 @@ export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:str
     price : role === "premiumTutor" ? price : 0,
     ratingsAverage : 2.0,
     status,
-    thumbnailUrl,
+    thumbnailUrl : thumbnailUrl ?? "",
     totalEnrollments : 0
   });
 

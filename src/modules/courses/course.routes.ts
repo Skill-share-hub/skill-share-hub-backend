@@ -4,6 +4,7 @@ import { authorizeRoles } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 import { CourseSchema, UpdateCourseSchema, UpdateStatusSchema } from './course.validation';
 import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse } from './course.controller';
+import { upload } from '../../utils/multer';
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.get('/:id', getSingleCourse)
 router.post('/',
   authenticate,
   authorizeRoles("tutor", "premiumTutor","student"),
+  upload.single("thumbnailUrl"),
   validate(CourseSchema),
   createCourse
 )
@@ -21,6 +23,7 @@ router.post('/',
 router.put('/:id',
   authenticate,
   authorizeRoles("tutor", "premiumTutor","student"),
+  upload.single("thumbnailUrl"),
   validate(UpdateCourseSchema),
   updateCourse
 )
