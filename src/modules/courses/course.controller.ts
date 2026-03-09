@@ -1,10 +1,11 @@
 import { NextFunction, Request,Response } from "express"
-import { QuerySchema, type ICourse } from "./course.validation"
-import { changeStatus, editCourse, getCourse, getCourses, makeCourse } from "./course.service";
+import { IContent, QuerySchema, type ICourse } from "./course.validation"
+import { changeStatus, editCourse, getCourse, getCourses, makeContent, makeCourse, removeCourse, tutorCourses } from "./course.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
+import { MulterFiles } from "./course.type";
 
 
 export const createCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
@@ -32,7 +33,6 @@ export const updateCourse = async (req:Request, res:Response, next:NextFunction)
   try{
     const payload = req.body as Partial<ICourse> ;
     const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
-
     const course = await editCourse(payload,courseId, req.user?._id, req.user?.role);
 
     res.status(200).json(
@@ -98,3 +98,57 @@ export const getSingleCourse = async (req:Request, res:Response, next:NextFuncti
     next(error)
   }
 }
+
+export const deleteCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
+    await removeCourse(courseId,req.user?._id);
+
+    res.status(200).json(
+      new ApiResponse("Course removed!",null,true)
+    )
+
+  }catch(error){
+    next(error)
+  }
+}
+
+export const getTutorCourses = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const courses = await tutorCourses(req.user?._id);
+
+    res.status(200).json(
+      new ApiResponse("Courses found!",courses,true)
+    )
+  }catch(error){
+    next(error)
+  }
+}
+
+export const createContent = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const body = req.body;
+    const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
+
+    const files = req.files as MulterFiles
+    const contentUrl = files.contentUrl?.[0]
+    const thumbnailUrl = files.thumbnailUrl?.[0]
+
+    if(!contentUrl?.location)throw new ApiError(400,"Content is Required!");
+
+    const payload = {
+      ...body,
+      contentUrl : contentUrl?.location,
+      thumbnailUrl : thumbnailUrl?.location
+    }
+
+    const content = await makeContent(payload,courseId);
+
+    res.status(201).json(
+      new ApiResponse("Content created!",content,true)
+    );
+
+  }catch(error){
+    next(error);
+  }
+} 
