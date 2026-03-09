@@ -6,7 +6,7 @@ import { User } from "./user.model";
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
-
+console.log(userId)
     const user = await User.findById(userId)
       .select("-passwordHash");
 
