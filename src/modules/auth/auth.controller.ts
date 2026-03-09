@@ -72,7 +72,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    const result = logoutUser();
+    const result = logoutUser(req.user._id);
 
     res.clearCookie("accessToken", {
       httpOnly: true,
