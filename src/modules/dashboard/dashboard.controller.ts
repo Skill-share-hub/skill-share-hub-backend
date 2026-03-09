@@ -1,7 +1,8 @@
-export const getStudentDashboard = (req, res) => {
+import { Request, Response } from "express";
+export const getStudentDashboard = (req: Request, res: Response) => {
 
-    const enrolledCourses = []
-    const recommendedCourses = []
+const enrolledCourses: any[] = []
+const recommendedCourses: any[] = []
     const creditBalance = 0
 
     res.json({
@@ -10,10 +11,10 @@ export const getStudentDashboard = (req, res) => {
         creditBalance
     })
 }
-export const getTuterDashboard = (req, res) => {
+export const getTutorDashboard = (req: Request, res: Response) => {
 
-    const createdCourses = []
-    const totalEnrollments  = []
+    const createdCourses:any[] = []
+    const totalEnrollments  = 0
     const earnings  = 0
 
     res.json({
