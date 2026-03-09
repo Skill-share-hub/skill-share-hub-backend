@@ -1,25 +1,26 @@
-import { Request, Response } from "express";
-export const getStudentDashboard = (req: Request, res: Response) => {
+import { Request,Response } from "express"
+import { getStudentDashboardData, getTutorDashboardData } from "./dashboard.service"
+export const getStudentDashboard = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id;
 
-const enrolledCourses: any[] = []
-const recommendedCourses: any[] = []
-    const creditBalance = 0
+    const data = await getStudentDashboardData(userId);
 
-    res.json({
-        enrolledCourses,
-        recommendedCourses,
-        creditBalance
-    })
-}
-export const getTutorDashboard = (req: Request, res: Response) => {
-
-    const createdCourses:any[] = []
-    const totalEnrollments  = 0
-    const earnings  = 0
-
-    res.json({
-        createdCourses,
-        totalEnrollments,
-        earnings 
-    })
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch dashboard"
+    });
+  }
+};
+export const getTutorDashboard = async(req:Request,res:Response) => {
+ try {
+    const userId=req.user._id
+   const data= await getTutorDashboardData(userId)
+    res.json(data)
+    } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch dashboard"
+    });
+  }
 }
