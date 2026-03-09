@@ -7,7 +7,6 @@ import generateOtp from '../../utils/generateOtp';
 import { comparePassword, hashPassword } from '../../utils/hash';
 import { User } from '../users/user.model';
 import { RefreshToken } from './auth.model';
-import { RegisterInput } from './auth.validation';
 import { RegisterInput,LoginInput } from './auth.types';
 import bcrypt from 'bcryptjs';
 
@@ -52,6 +51,11 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterRespon
 
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
+  await RefreshToken.create({
+  token: refreshToken,
+  userId: user._id,
+  revoked: false
+});
   await sendEmail(
   user.email,
   `Welcome to SkillShare Hub, ${user.name}! 🎉`,
@@ -92,7 +96,11 @@ export const loginUser = async (input: LoginInput): Promise<RegisterResponse> =>
 
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
-
+await RefreshToken.create({
+  token: refreshToken,
+  userId: user._id,
+  revoked: false
+});
   return {
     user: {
       id: user._id.toString(),
@@ -146,7 +154,11 @@ export const googleLoginUser = async (payload: any): Promise<RegisterResponse> =
 
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
-
+await RefreshToken.create({
+  token: refreshToken,
+  userId: user._id,
+  revoked: false
+});
   return {
     user: {
       id: user._id.toString(),
@@ -267,7 +279,8 @@ export const resetPasswordService = async (email: string, password: string,otp:s
   await User.updateOne({ email }, { passwordHash });
 };
 
-export const logoutUser = () => {
+export const logoutUser = async(userId:string) => {
+  await RefreshToken.findOneAndUpdate({userId},{revoked:true})
   return {
     success: true,
     message: "Logged out successfully",
