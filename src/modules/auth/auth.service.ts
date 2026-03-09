@@ -6,6 +6,8 @@ import { otpTemplate, registerTemplate } from '../../utils/email.templates';
 import generateOtp from '../../utils/generateOtp';
 import { comparePassword, hashPassword } from '../../utils/hash';
 import { User } from '../users/user.model';
+import { RefreshToken } from './auth.model';
+import { RegisterInput } from './auth.validation';
 import { RegisterInput,LoginInput } from './auth.types';
 import bcrypt from 'bcryptjs';
 
@@ -168,14 +170,32 @@ export const refreshTokens = async (refreshToken: string): Promise<RegisterRespo
       throw new ApiError(401, 'Invalid refresh token');
     }
 
+      const storedToken = await RefreshToken.findOne({
+    token: refreshToken,
+    userId: user._id,
+    revoked: false
+  });
+  
+  if (!storedToken) {
+    throw new ApiError(401, "Invalid or expired refresh token");
+  }
+  storedToken.revoked = true;
+  await storedToken.save();
+
     const tokenPayload = {
       userId: user._id.toString(),
       email: user.email,
       role: user.role
     };
-
     const accessToken = generateAccessToken(tokenPayload);
     const newRefreshToken = generateRefreshToken(tokenPayload);
+
+    await RefreshToken.create({
+      token: newRefreshToken,
+      userId: user._id,
+      revoked: false
+    });
+
 
     return {
       user: {

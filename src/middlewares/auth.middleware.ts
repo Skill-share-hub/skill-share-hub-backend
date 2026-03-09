@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { User } from "../modules/users/user.model";
-import { env } from "../config/env";
+import { checkToken } from "../utils/checkToken";
 
 interface JwtPayload {
   userId: string;
@@ -14,21 +12,15 @@ export const authenticate = async (
   next: NextFunction,
 ) => {
   try {
-    const token = req.cookies.accessToken;
- if (!token) {
+   const token = req.cookies.accessToken;
+   if (!token) {
       return res.status(401).json({
         success: false,
         message: "Access token missing",
       });
     }
-    const decoded = jwt.verify(
-      token,
-      env.jwtAccessSecret,
-    ) as JwtPayload;
-
-    const user = await User.findById(decoded.userId).select(
-      "_id name email role verificationStatus",
-    );
+    
+    const user = await checkToken(token);
 
     if (!user) {
       return res.status(401).json({

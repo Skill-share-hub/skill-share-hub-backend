@@ -42,4 +42,8 @@ export const env = {
   redisPassword:getEnv("REDIS_PASSWORD"),
   redisHost:getEnv("REDIS_HOST"),
   redisPort:getEnv("REDIS_PORT"),
+  awsRegion : getEnv("AWS_REGION"),
+  awsBucket : getEnv("AWS_BUCKET"),
+  awsSecretKey : getEnv("AWS_SECRET_KEY"),
+  awsAccessKey : getEnv("AWS_ACCESS_KEY")
 };
