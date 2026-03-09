@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
-import { Course } from "./course.model";
-import { ICourse, PCourse, TQuery } from "./course.validation";
+import { Content, Course } from "./course.model";
+import { IContent, ICourse, PCourse, TQuery } from "./course.validation";
 import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
@@ -59,7 +59,6 @@ export const editCourse = async (input:Partial<ICourse>, courseId:string, tutorI
     description,
     courseSkills,
     price,
-    status,
     thumbnailUrl,
     courseLevel,
     title
@@ -78,7 +77,6 @@ export const editCourse = async (input:Partial<ICourse>, courseId:string, tutorI
     creditCost,
     description,
     price : role === "premiumTutor" ? price : 0,
-    status,
     thumbnailUrl,
     title
   },{returnDocument: "after" , runValidators : true});
@@ -152,10 +150,59 @@ export const getCourse = async (courseId:string) => {
   const course = await Course.findById(courseId).populate({
     path : "tutorId",
     select : "_id name avatarUrl email tutorProfile"
-  }).lean();
+  })
+  .populate({
+    path : "contentModules",
+    select : "-contentUrl"
+  })
 
   if(!course){
     throw new ApiError(404,"Course not found!");
   }
   return course ;
 }
+
+export const removeCourse = async (courseId:string, userId:Types.ObjectId) => {  
+
+  const user = await User.findOne({_id : userId, "tutorProfile.createdCourses" : courseId}).lean();
+
+  if(!user){
+    throw new ApiError(403,"This course does not belong to the tutor.");
+  }
+
+  const course = await Course.deleteOne({_id : courseId});
+  if(course.deletedCount === 0)throw new ApiError(404,"Course not found!");
+
+  await User.updateOne({_id : userId},{$pull : {"tutorProfile.createdCourses" : courseId}});
+
+  return true
+}
+
+export const tutorCourses = async (tutorId:Types.ObjectId) => {
+  const courses = await Course.find({tutorId}).populate("contentModules");
+  return courses
+}
+
+export const makeContent = async (input:Required<IContent>,courseId:string) => {
+
+  const {contentUrl,duration,summary,thumbnailUrl,title} = input ;
+
+  const course = await Course.findById(courseId).lean();
+  if(!course)throw new ApiError(404,"No course found!");
+
+  const content = await Content.create({
+    courseId,
+    contentUrl,
+    duration,
+    summary,
+    thumbnailUrl,
+    title
+  });
+
+  await Course.updateOne({_id : courseId},{$push:{contentModules : content._id}});
+
+  return content ;
+
+}
+
+
