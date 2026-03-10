@@ -1,6 +1,6 @@
 import { NextFunction, Request,Response } from "express"
 import { IContent, QuerySchema, type ICourse } from "./course.validation"
-import { changeStatus, editCourse, getCourse, getCourses, makeContent, makeCourse, removeCourse, tutorCourses } from "./course.service";
+import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, premiumCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
@@ -33,6 +33,11 @@ export const updateCourse = async (req:Request, res:Response, next:NextFunction)
   try{
     const payload = req.body as Partial<ICourse> ;
     const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
+    const file = req.file as Express.Multer.File & { location: string }; 
+    if(file?.location){
+      payload.thumbnailUrl = file.location
+    }
+
     const course = await editCourse(payload,courseId, req.user?._id, req.user?.role);
 
     res.status(200).json(
@@ -115,7 +120,20 @@ export const deleteCourse = async (req:Request, res:Response, next:NextFunction)
 
 export const getTutorCourses = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
-    const courses = await tutorCourses(req.user?._id);
+
+    const result = QuerySchema.safeParse(req.query);
+
+    if(!result.success){
+      const message = result.error.issues
+      .map((issue,i) => {
+        return String(issue.path[i]) + " ---> " + issue.message
+      })
+      .join(' | ');
+      
+      throw new ApiError(400,message);
+    }
+
+    const courses = await tutorCourses(result.data,req.user?._id);
 
     res.status(200).json(
       new ApiResponse("Courses found!",courses,true)
@@ -152,3 +170,60 @@ export const createContent = async (req:Request, res:Response, next:NextFunction
     next(error);
   }
 } 
+
+export const updateContent = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const body = req.body;
+    const contentId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
+
+    const files = req.files as MulterFiles
+    const contentUrl = files.contentUrl?.[0]
+    const thumbnailUrl = files.thumbnailUrl?.[0]
+
+    if(!contentUrl?.location && !body.contentUrl)throw new ApiError(400,"Content is Required!");
+
+    const payload = {
+      ...body,
+      contentUrl : contentUrl?.location,
+      thumbnailUrl : thumbnailUrl?.location
+    }
+
+    const content = await editContent(payload,contentId);
+
+    res.status(200).json(
+      new ApiResponse("Content Updated!",content,true)
+    );
+
+  }catch(error){
+    next(error)
+  }
+}
+
+export const deleteContent = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const contentId = Array.isArray(req.params?.contentId) ? req.params?.contentId[0] : req.params?.contentId ;
+    const courseId = Array.isArray(req.params?.courseId) ? req.params?.courseId[0] : req.params?.courseId ;
+
+    await removeContent(contentId,courseId,req.user?._id);
+
+    res.status(200).json(
+      new ApiResponse("Content deleted successfully!",null,true)
+    )
+  }catch(error){
+    next(error)
+  }
+}
+
+export const getPremiumCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
+    const course = await premiumCourse(courseId);
+
+    res.status(200).json(
+      new ApiResponse("Course Found!",course,true)
+    );
+
+  }catch(error){
+    next(error);
+  }
+}
