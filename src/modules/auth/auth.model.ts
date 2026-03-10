@@ -16,4 +16,4 @@ const RefreshTokenShema=new Schema({
     }
 })
 
-export const RefreshToken=model("RefreshToken",RefreshTokenShema)
+export const RefreshToken= model("RefreshToken",RefreshTokenShema)

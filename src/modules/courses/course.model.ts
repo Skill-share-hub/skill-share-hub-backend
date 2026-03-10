@@ -1,10 +1,11 @@
 import { model, Schema } from "mongoose";
-import type { ICourse } from "./course.validation";
+import type { IContent, ICourse } from "./course.validation";
 
 const courseSchema = new Schema<ICourse>({
   tutorId : {
     type : Schema.Types.ObjectId,
-    ref : "User"
+    ref : "User",
+    required : true
   },
 
   title : {
@@ -24,19 +25,12 @@ const courseSchema = new Schema<ICourse>({
     required : true
   },
 
-  contentModules : {
-    type : [
-      {
-        title : String,
-        url : {type :String,required : true},
-        summary : String,
-        thumbnile : String,
-        duration : {type : Number , required : true}
-      }
-    ],
-    required : true,
-    default : []
-  },
+  contentModules : [
+    {
+      type : Schema.Types.ObjectId,
+      ref : "Content"
+    }
+  ],
   
   courseType : {
     type : String,
@@ -79,4 +73,30 @@ const courseSchema = new Schema<ICourse>({
   }
 },{timestamps : true});
 
+const contentSchema = new Schema<IContent>({
+  courseId : {
+    type : Schema.Types.ObjectId,
+    ref : "Course",
+    required : true
+  },
+  title : {
+    type : String,
+    defalut : "No title"
+  },
+  contentUrl : {
+    type :String,
+    required : true
+  },
+  summary : {
+    type : String,
+    default : "No Summary"
+  },
+  thumbnailUrl : String,
+  duration : {
+    type : Number,
+    default : 60
+  }
+},{timestamps : true});
+
+export const Content = model<IContent>("Content",contentSchema);
 export const Course = model<ICourse>("Course",courseSchema);

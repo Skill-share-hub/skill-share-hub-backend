@@ -1,17 +1,29 @@
 import { Types } from 'mongoose';
 import {z} from 'zod'
 
-const moduleSchema = z.object({
+const objectIdSchema = z.string().refine(
+  (val) => Types.ObjectId.isValid(val),
+  {
+    message: 'Invalid ObjectId',
+  }
+);
+
+export const ContentSchema = z.object({
+  courseId : z
+  .string()
+  .refine((id)=>Types.ObjectId.isValid(id),{ message: "Invalid ObjectId" })
+  .transform((id) => new Types.ObjectId(id)),
+
   title : z
   .string()
   .min(5,"Minimum of 5 characters!")
   .max(100,"Maximum of 100 characters!"),
 
-  url : z.string(),
-  summary : z.string().optional(),
-  thumbnile : z.string().optional(),
-  duration : z.number().min(5)
-});
+  contentUrl : z.string(),
+  summary : z.string(),
+  thumbnailUrl : z.string(),
+  duration : z.coerce.number().min(60 , "video should be atleast 1 minute")
+}).partial();
 
 const baseSchema = z.object({
   title : z
@@ -36,7 +48,7 @@ const baseSchema = z.object({
   .min(3,"Minimum of 3 characters!"),
 
   contentModules : z
-  .array(moduleSchema)
+  .array(objectIdSchema)
   .default([]),
 
   courseType : z
@@ -139,6 +151,7 @@ export const QuerySchema = z.object({
   .transform(val => val === "true")
 });
 
+export type IContent = z.infer<typeof ContentSchema>
 export type TQuery = z.infer<typeof QuerySchema>
 export type PCourse = z.infer<typeof UpdateStatusSchema>
 export type ICourse = z.infer<typeof CourseSchema>;

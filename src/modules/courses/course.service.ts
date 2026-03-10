@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
-import { Course } from "./course.model";
-import { ICourse, PCourse, TQuery } from "./course.validation";
+import { Content, Course } from "./course.model";
+import { IContent, ICourse, PCourse, TQuery } from "./course.validation";
 import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
@@ -59,7 +59,6 @@ export const editCourse = async (input:Partial<ICourse>, courseId:string, tutorI
     description,
     courseSkills,
     price,
-    status,
     thumbnailUrl,
     courseLevel,
     title
@@ -78,7 +77,6 @@ export const editCourse = async (input:Partial<ICourse>, courseId:string, tutorI
     creditCost,
     description,
     price : role === "premiumTutor" ? price : 0,
-    status,
     thumbnailUrl,
     title
   },{returnDocument: "after" , runValidators : true});
@@ -152,10 +150,127 @@ export const getCourse = async (courseId:string) => {
   const course = await Course.findById(courseId).populate({
     path : "tutorId",
     select : "_id name avatarUrl email tutorProfile"
-  }).lean();
+  })
+  .populate({
+    path : "contentModules",
+    select : "-contentUrl"
+  })
 
   if(!course){
     throw new ApiError(404,"Course not found!");
   }
   return course ;
 }
+
+export const removeCourse = async (courseId:string, userId:Types.ObjectId) => {  
+
+  const user = await User.findOne({_id : userId, "tutorProfile.createdCourses" : courseId}).lean();
+
+  if(!user){
+    throw new ApiError(403,"This course does not belong to the tutor.");
+  }
+
+  const course = await Course.deleteOne({_id : courseId});
+  if(course.deletedCount === 0)throw new ApiError(404,"Course not found!");
+
+  await User.updateOne({_id : userId},{$pull : {"tutorProfile.createdCourses" : courseId}});
+
+  return true
+}
+
+export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
+
+  const queryObj:QueryType & {tutorId:Types.ObjectId} = {
+    tutorId
+  }
+  
+  const {limit,page} = query ;
+  const skip = (page-1) * limit ;
+
+  if(query.c){
+    queryObj.category = query.c ;
+  }
+
+  if(query.type){
+    queryObj.courseType = query.type ; 
+  }
+
+  if(query.q){
+    queryObj.title = { $regex: query.q, $options: "i" } ;
+  }
+
+  const courses = await Course.find(queryObj).populate("contentModules").skip(skip).limit(limit);
+  return courses
+}
+
+export const makeContent = async (input:Required<IContent>,courseId:string) => {
+
+  const {contentUrl,duration,summary,thumbnailUrl,title} = input ;
+
+  const course = await Course.findById(courseId).lean();
+  if(!course)throw new ApiError(404,"No course found!");
+
+  const content = await Content.create({
+    courseId,
+    contentUrl,
+    duration,
+    summary,
+    thumbnailUrl,
+    title
+  });
+
+  await Course.updateOne({_id : courseId},{$push:{contentModules : content._id}});
+
+  return content ;
+
+}
+
+export const editContent = async (input:Required<IContent>, contentId:string) => {
+  const {contentUrl,duration,summary,thumbnailUrl,title} = input ;
+
+  const content = await Content.findOneAndUpdate(
+    {_id : contentId},
+    {
+      contentUrl,
+      duration,
+      summary,
+      thumbnailUrl,
+      title
+    },
+    {returnDocument: "after", runValidators:true}
+  );
+
+  if(!content)throw new ApiError(404,"Content not found!");
+
+  return content ;
+}
+
+export const removeContent =  async (contentId:string, courseId:string, userId:Types.ObjectId) => {
+
+  const course = await Course.findOneAndUpdate({_id :courseId },{$pull : {contentModules : contentId}});
+  if(!course) throw new ApiError(404,"Course not found!");
+
+  if(course.tutorId !== userId)throw new ApiError(403,"Course doesn't match with user!");
+
+  const content = await Content.findOneAndDelete({_id : contentId});
+  if(!content)throw new ApiError(404,"Content not found or already deleted!");
+
+  return true
+
+}
+
+export const premiumCourse = async (courseId:string) => {
+  
+  const course = await Course.findById(courseId).populate({
+    path : "tutorId",
+    select : "_id name avatarUrl email tutorProfile"
+  })
+  .populate("contentModules");
+
+  if(!course){
+    throw new ApiError(404,"Course not found!");
+  }
+  return course ;
+}
+
+
