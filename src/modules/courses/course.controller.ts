@@ -6,10 +6,30 @@ import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
 
+import { COURSE_CATEGORIES } from "./course.constants";
+
+export const getCourseCategories = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+
+    res.status(200).json(
+      new ApiResponse("Categories fetched successfully", COURSE_CATEGORIES, true)
+    );
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const createCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
     const payload = req.body as ICourse ;
+    if (!COURSE_CATEGORIES.includes(payload.category)) {
+  throw new ApiError(400, "Invalid course category");
+}
     const file = req.file as Express.Multer.File & { location: string };
     const course = await makeCourse(payload, req.user?._id, req.user?.role , file?.location ?? "");
 
