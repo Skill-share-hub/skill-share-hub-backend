@@ -94,7 +94,7 @@ const contentSchema = new Schema<IContent>({
   thumbnailUrl : String,
   duration : {
     type : Number,
-    required : true
+    default : 60
   }
 },{timestamps : true});
 

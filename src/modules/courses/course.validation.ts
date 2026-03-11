@@ -12,20 +12,18 @@ export const ContentSchema = z.object({
   courseId : z
   .string()
   .refine((id)=>Types.ObjectId.isValid(id),{ message: "Invalid ObjectId" })
-  .transform((id) => new Types.ObjectId(id))
-  .optional(),
+  .transform((id) => new Types.ObjectId(id)),
 
   title : z
   .string()
   .min(5,"Minimum of 5 characters!")
-  .max(100,"Maximum of 100 characters!")
-  .optional(),
+  .max(100,"Maximum of 100 characters!"),
 
-  contentUrl : z.string().optional(),
-  summary : z.string().optional(),
-  thumbnailUrl : z.string().optional(),
+  contentUrl : z.string(),
+  summary : z.string(),
+  thumbnailUrl : z.string(),
   duration : z.coerce.number().min(60 , "video should be atleast 1 minute")
-});
+}).partial();
 
 const baseSchema = z.object({
   title : z
