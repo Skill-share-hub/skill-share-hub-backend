@@ -12,17 +12,19 @@ const router = Router();
 router.get('/', getAllCourses);
 
 router.get("/categories", getCourseCategories);
+
 router.get('/:id', getSingleCourse);
+
 router.get('/premium/:id',
   authenticate,
   getPremiumCourse
 )
+
 router.get('/tutor',
   authenticate,
   authorizeRoles("tutor", "premiumTutor","student"),
   getTutorCourses
 );
-
 
 router.post('/',
   authenticate,
