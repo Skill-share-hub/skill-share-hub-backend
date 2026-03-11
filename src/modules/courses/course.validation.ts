@@ -141,6 +141,25 @@ export const QuerySchema = z.object({
   .enum(["credit","paid"])
   .optional(),
 
+  minPrice : z
+  .coerce
+  .number()
+  .min(0 , "Price must be at least 1")
+  .default(0),
+
+  maxPrice : z
+  .coerce
+  .number()
+  .min(0 , "Price must be at least 1")
+  .default(Infinity),
+
+  rating : z
+  .coerce
+  .number()
+  .min(1 , "Rating must be at least 1")
+  .max(5 , "Rating must be at most 5")
+  .optional(),
+
   sort : z
   .enum(["latest","popular"])
   .optional(),
@@ -149,7 +168,14 @@ export const QuerySchema = z.object({
   .enum(["true","false"])
   .default("false")
   .transform(val => val === "true")
-});
+})
+.refine(
+  data => data.minPrice <= data.maxPrice,
+  {
+    message: "minPrice must be less than or equal to maxPrice",
+    path: ["minPrice"]
+  }
+);
 
 export type IContent = z.infer<typeof ContentSchema>
 export type TQuery = z.infer<typeof QuerySchema>

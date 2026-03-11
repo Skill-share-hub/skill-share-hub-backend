@@ -98,7 +98,7 @@ export const changeStatus = async (status:PCourse,id:string,tutorId:string) => {
 
 export const getCourses = async (query:TQuery, userId:Types.ObjectId | string) => {
 
-  const queryObj:QueryType = {}
+  const queryObj:Partial<QueryType> = {}
   let sortObj:SortType = {}
   
   const {limit,page} = query ;
@@ -140,14 +140,40 @@ export const getCourses = async (query:TQuery, userId:Types.ObjectId | string) =
     }
   }
 
+  if(query.maxPrice !== undefined && query.minPrice !== undefined){
+
+    if(query.type === "credit"){
+
+      queryObj.creditCost = {$gte : query.minPrice , $lte : query.maxPrice }
+
+    }else if (query.type === "paid"){
+      
+      queryObj.price = {$gte : query.minPrice , $lte : query.maxPrice }
+
+    }
+  }
+
+  if(query.rating){
+    queryObj.ratingsAverage = {$gte : query.rating}
+  }
+
   const courses = await Course.find(queryObj).sort(sortObj).skip(skip).limit(limit);
 
-  return courses
+  const totalCount = await Course.countDocuments(queryObj);
+
+  return {
+    courses,
+    page,
+    limit,
+    totalCount,
+    totalPages : Math.ceil(totalCount/limit)
+  }
 
 }
 
 export const getCourse = async (courseId:string) => {
-  const course = await Course.findById(courseId).populate({
+  const course = await Course.findById(courseId)
+  .populate({
     path : "tutorId",
     select : "_id name avatarUrl email tutorProfile"
   })
@@ -180,7 +206,7 @@ export const removeCourse = async (courseId:string, userId:Types.ObjectId) => {
 
 export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
 
-  const queryObj:QueryType & {tutorId:Types.ObjectId} = {
+  const queryObj:Partial<QueryType> & {tutorId:Types.ObjectId} = {
     tutorId
   }
   
@@ -200,7 +226,16 @@ export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
   }
 
   const courses = await Course.find(queryObj).populate("contentModules").skip(skip).limit(limit);
-  return courses
+
+  const totalCount = await Course.countDocuments(queryObj);
+
+  return {
+    courses,
+    page,
+    limit,
+    totalCount,
+    totalPages : Math.ceil(totalCount/limit)
+  }
 }
 
 export const makeContent = async (input:Required<IContent>,courseId:string) => {

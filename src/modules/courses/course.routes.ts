@@ -4,7 +4,7 @@ import { authorizeRoles } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 
 import { ContentSchema, CourseSchema, UpdateCourseSchema, UpdateStatusSchema } from './course.validation';
-import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getPremiumCourse } from './course.controller';
+import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getPremiumCourse, getCourseCategories } from './course.controller';
 import { upload } from '../../utils/multer';
 
 const router = Router();
@@ -12,17 +12,19 @@ const router = Router();
 router.get('/', getAllCourses);
 
 router.get("/categories", getCourseCategories);
+
 router.get('/:id', getSingleCourse);
+
 router.get('/premium/:id',
   authenticate,
   getPremiumCourse
 )
+
 router.get('/tutor',
   authenticate,
   authorizeRoles("tutor", "premiumTutor","student"),
   getTutorCourses
 );
-
 
 router.post('/',
   authenticate,
