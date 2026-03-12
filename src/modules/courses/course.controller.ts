@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express"
+import { NextFunction, Request,Response } from "express"
 import { IContent, QuerySchema, type ICourse } from "./course.validation"
 import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, premiumCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
 import { ApiResponse } from "../../utils/ApiResponse";
@@ -6,8 +6,9 @@ import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
 import { MulterFiles } from "./course.type";
-
 import { COURSE_CATEGORIES } from "./course.constants";
+
+
 
 export const getCourseCategories = async (
   req: Request,
@@ -28,9 +29,7 @@ export const getCourseCategories = async (
 export const createCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
     const payload = req.body as ICourse ;
-    if (!COURSE_CATEGORIES.includes(payload.category)) {
-  throw new ApiError(400, "Invalid course category");
-}
+
     const file = req.file as Express.Multer.File & { location: string };
     const course = await makeCourse(payload, req.user?._id, req.user?.role, file?.location ?? "");
 
@@ -57,6 +56,8 @@ export const updateCourse = async (req:Request, res:Response, next:NextFunction)
     if(file?.location){
       payload.thumbnailUrl = file.location
     }
+
+    console.log(payload)
 
     const course = await editCourse(payload,courseId, req.user?._id, req.user?.role);
 
@@ -100,10 +101,10 @@ export const getAllCourses = async (req: Request, res: Response, next: NextFunct
     const token = req.cookies.accessToken;
     const user = await checkToken(token);
 
-    const courses = await getCourses(result.data, user?._id || "");
+    const courses = await getCourses(result.data,user?._id || "");
 
     res.status(200).json(
-      new ApiResponse("Courses Found!", courses, true)
+      new ApiResponse("Courses Found!",courses,true)
     );
 
   } catch (error) {
@@ -154,12 +155,12 @@ export const getTutorCourses = async (req:Request, res:Response, next:NextFuncti
       throw new ApiError(400,message);
     }
 
-    const courses = await tutorCourses(result.data,req.user?._id);
+    const data = await tutorCourses(result.data,req.user?._id);
 
     res.status(200).json(
-      new ApiResponse("Courses found!", courses, true)
+      new ApiResponse("Courses found!",courses,true)
     )
-  } catch (error) {
+  }catch(error){
     next(error)
   }
 }

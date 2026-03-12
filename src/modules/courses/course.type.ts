@@ -1,11 +1,20 @@
 export type QueryType = {
-  category?: string
-  courseType?: string
-  title?: {
+  category: string
+  courseType: string
+  title: {
     $regex: string
     $options: string
   },
-  $or ?: any
+  $or : any,
+  price : {
+    $gte : number,
+    $lte : number
+  }
+  creditCost : {
+    $gte : number,
+    $lte : number
+  },
+  ratingsAverage : {$gte :number}
 }
 
 export type SortType = {
