@@ -134,7 +134,6 @@ export const QuerySchema = z.object({
   .string()
   .min(3, "Minimum 3 characters needed!")
   .max(50,"Maximum 50 characters allowed!")
-  .lowercase()
   .optional(),
 
   type : z
@@ -167,7 +166,10 @@ export const QuerySchema = z.object({
   recommended : z
   .enum(["true","false"])
   .default("false")
-  .transform(val => val === "true")
+  .transform(val => val === "true"),
+
+  courseId : objectIdSchema
+  .optional()
 })
 .refine(
   data => data.minPrice <= data.maxPrice,
