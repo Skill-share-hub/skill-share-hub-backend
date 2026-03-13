@@ -156,7 +156,28 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
     queryObj.ratingsAverage = {$gte : query.rating}
   }
 
-  const courses = await Course.find(queryObj).sort(sortObj).skip(skip).limit(limit);
+  if (query.recommended && query.courseId){
+    const course = await Course.findById(query.courseId);
+    queryObj.courseType = course?.courseType ;
+    queryObj.title = { $regex: course?.title|| "", $options: "i" } ;
+    queryObj.category = course?.category
+  }
+
+  let courses = await Course.find(queryObj)
+  .populate({
+    path : "tutorId",
+    select : "_id name avatarUrl"
+  })
+  .sort(sortObj).skip(skip).limit(limit);
+
+  if(courses.length < limit || courses.length === 0 ){
+    courses = await Course.find()
+    .populate({
+      path : "tutorId",
+      select : "_id name avatarUrl"
+    })
+    .skip(skip).limit(limit);
+  }
 
   const totalCount = await Course.countDocuments(queryObj);
 

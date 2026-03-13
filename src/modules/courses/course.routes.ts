@@ -25,10 +25,15 @@ router.get('/premium/:id',
   getPremiumCourse
 )
 
+router.get('/tutor',
+  authenticate,
+  authorizeRoles("tutor", "premiumTutor"),
+  getTutorCourses
+);
 
 router.post('/',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   upload.single("thumbnailUrl"),
   validate(CourseSchema),
   createCourse
@@ -36,7 +41,7 @@ router.post('/',
 
 router.post('/:id/content',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   upload.fields([
     {name : "contentUrl" , maxCount : 1},
     {name : "thumbnailUrl", maxCount : 1}
@@ -47,7 +52,7 @@ router.post('/:id/content',
 
 router.put('/content/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   upload.fields([
     {name : "contentUrl" , maxCount : 1},
     {name : "thumbnailUrl", maxCount : 1}
@@ -58,13 +63,13 @@ router.put('/content/:id',
 
 router.delete('/:courseId/content/:contentId',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   deleteContent
 );
 
 router.put('/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   upload.single("thumbnailUrl"),
   validate(UpdateCourseSchema),
   updateCourse
@@ -72,14 +77,14 @@ router.put('/:id',
 
 router.patch('/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   validate(UpdateStatusSchema),
   changeCourseStatus
 );
 
 router.delete('/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor"),
   deleteCourse
 );
 
