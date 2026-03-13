@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { User } from "./user.model";
+import { ApiError } from "../../utils/ApiError";
 
 // Get user profile
 
 export const getUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
-
     const user = await User.findById(userId)
       .select("-passwordHash");
 
@@ -33,7 +33,13 @@ export const getUserProfile = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
-    const { name, avatarUrl, studentProfile, tutorProfile } = req.body;
+    const { name, studentProfile, tutorProfile } = req.body;
+    let { avatarUrl } = req.body;
+
+    // If a file was uploaded, use its URL
+    if (req.file) {
+      avatarUrl = (req.file as any).location;
+    }
 
     const user = await User.findById(userId);
 
@@ -51,34 +57,63 @@ export const updateUserProfile = async (req: Request, res: Response) => {
     // Student profile
     if (studentProfile) {
       user.studentProfile = {
-        ...user.studentProfile,
+        bio: "",
+        skills: [],
+        ...(user.studentProfile || {}),
         ...studentProfile,
       };
     }
 
-    // Tutor profile (only if tutor or premiumTutor)
-    if (
-      tutorProfile &&
-      (user.role === "tutor" || user.role === "premiumTutor")
-    ) {
-     if (
-  tutorProfile &&
-  (user.role === "tutor" || user.role === "premiumTutor")
-) {
-  user.tutorProfile!.bio =
-    tutorProfile.bio ?? user.tutorProfile?.bio;
+    // Tutor profile update
+    if (tutorProfile) {
+      if (user.role === "student") {
+        user.role = "tutor";
+      }
 
-  user.tutorProfile!.skills =
-    tutorProfile.skills ?? user.tutorProfile?.skills;
+      // Ensure tutorProfile is initialized if this is a new tutor
+      if (!user.tutorProfile) {
+        user.tutorProfile = {
+          bio: "",
+          skills: [],
+          createdCourses: [],
+          totalCreditsEarned: 0,
+          monetizationEligible: false,
+          ratingsAverage: 0,
+          reviewCount: 0,
+          earningsTotal: 0,
+        };
+      }
 
-  user.tutorProfile!.experience =
-    tutorProfile.experience ?? user.tutorProfile?.experience;
-
-  user.tutorProfile!.payoutDetails =
-    tutorProfile.payoutDetails ?? user.tutorProfile?.payoutDetails;
-}
+      // Only update fields allowed to be changed by the user
+      if (tutorProfile.bio !== undefined) user.tutorProfile.bio = tutorProfile.bio;
+      if (tutorProfile.skills !== undefined) user.tutorProfile.skills = tutorProfile.skills;
+      if (tutorProfile.experience !== undefined) user.tutorProfile.experience = tutorProfile.experience;
+      
+      if (tutorProfile.payoutDetails) {
+        user.tutorProfile.payoutDetails = {
+          ...user.tutorProfile.payoutDetails,
+          ...tutorProfile.payoutDetails,
+        };
+      }
     }
+    
+const isStudentComplete =
+  user.name &&
+  user.avatarUrl;
 
+const isTutorComplete =
+  user.name &&
+  user.avatarUrl &&
+  user.tutorProfile?.bio &&
+  user.tutorProfile?.skills?.length;
+
+if (user.role === "student") {
+  user.isProfileCompleted = Boolean(isStudentComplete);
+}
+
+if (user.role === "tutor" || user.role === "premiumTutor") {
+  user.isProfileCompleted = Boolean(isTutorComplete);
+}
     await user.save();
 
     return res.status(200).json({
@@ -86,10 +121,7 @@ export const updateUserProfile = async (req: Request, res: Response) => {
       message: "Profile updated successfully",
       data: user,
     });
-  } catch {
-    return res.status(500).json({
-      success: false,
-      message: "Profile update failed",
-    });
+  } catch { 
+     throw new ApiError(500, "Profile update failed!");
   }
 };
