@@ -10,6 +10,7 @@ export interface IUser {
   passwordHash?: string;
   role: UserRole;
   isVerified: boolean;
+  isProfileCompleted:boolean;
 
   provider: "local" | "google";
   googleId?: string;
@@ -63,6 +64,11 @@ const userSchema = new Schema<IUser>(
     },
 
     isVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    isProfileCompleted:{
       type: Boolean,
       default: false,
     },
