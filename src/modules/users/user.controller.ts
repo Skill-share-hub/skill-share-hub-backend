@@ -33,7 +33,13 @@ export const getUserProfile = async (req: Request, res: Response) => {
 export const updateUserProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?._id;
-    const { name, avatarUrl,studentProfile, tutorProfile } = req.body;
+    const { name, studentProfile, tutorProfile } = req.body;
+    let { avatarUrl } = req.body;
+
+    // If a file was uploaded, use its URL
+    if (req.file) {
+      avatarUrl = (req.file as any).location;
+    }
 
     const user = await User.findById(userId);
 

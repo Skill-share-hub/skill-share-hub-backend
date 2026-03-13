@@ -15,6 +15,16 @@ router.put(
     "/profile",
     authenticate,
     upload.single("avatarUrl"),
+    (req, res, next) => {
+        // Parse stringified JSON fields from FormData
+        if (typeof req.body.studentProfile === "string") {
+            try { req.body.studentProfile = JSON.parse(req.body.studentProfile); } catch (e) {}
+        }
+        if (typeof req.body.tutorProfile === "string") {
+            try { req.body.tutorProfile = JSON.parse(req.body.tutorProfile); } catch (e) {}
+        }
+        next();
+    },
     validate(updateUserSchema),
     updateUserProfile
 );

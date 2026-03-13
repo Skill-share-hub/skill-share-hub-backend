@@ -7,6 +7,7 @@ export const updateUserSchema = z.object({
   studentProfile: z.object({
     bio: z.string().max(500, "Bio cannot exceed 500 characters").optional(),
     skills: z.array(z.string()).optional(),
+    interests: z.array(z.string()).optional(),
   }).optional(),
 
   tutorProfile: z.object({
