@@ -11,6 +11,11 @@ const router = Router();
 
 router.get('/', getAllCourses);
 
+router.get('/tutor',
+  authenticate,
+  authorizeRoles("tutor", "premiumTutor","student"),
+  getTutorCourses
+);
 router.get("/categories", getCourseCategories);
 
 router.get('/:id', getSingleCourse);

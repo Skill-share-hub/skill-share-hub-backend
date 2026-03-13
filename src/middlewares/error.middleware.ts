@@ -15,7 +15,7 @@ export const notFoundHandler = (req: Request, _res: Response, next: NextFunction
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const error = err as ErrorWithStatus;
   const statusCode = error.statusCode ?? error.status ?? 500;
-
+console.log(error)
   res.status(statusCode).json({
     success: false,
     status : statusCode,

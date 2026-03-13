@@ -5,7 +5,7 @@ import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
 
-export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:string , thumbnailUrl:string) => {
+export const makeCourse = async (input: ICourse, tutorId: Types.ObjectId, role: string, thumbnailUrl: string) => {
 
   const {
     category,
@@ -20,8 +20,8 @@ export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:str
     title
   } = input;
 
-  if(role !== "premiumTutor" && courseType === "paid"){
-    throw new ApiError(400,"Only premium tutor can create paid courses!");
+  if (role !== "premiumTutor" && courseType === "paid") {
+    throw new ApiError(400, "Only premium tutor can create paid courses!");
   }
 
 
@@ -35,68 +35,67 @@ export const makeCourse = async (input:ICourse, tutorId:Types.ObjectId, role:str
     courseSkills,
     creditCost,
     description,
-    price : role === "premiumTutor" ? price : 0,
-    ratingsAverage : 2.0,
+    price: role === "premiumTutor" ? price : 0,
+    ratingsAverage: 2.0,
     status,
-    thumbnailUrl : thumbnailUrl ?? "",
-    totalEnrollments : 0
+    thumbnailUrl: thumbnailUrl ?? "",
+    totalEnrollments: 0
   });
 
-  if(!course) throw new ApiError(400,"Course creation failed!");
+  if (!course) throw new ApiError(400, "Course creation failed!");
 
   return course
 }
 
-export const editCourse = async (input:Partial<ICourse>, courseId:string, tutorId:string, role:string) => {
+export const editCourse = async (input: Partial<ICourse>, courseId: string, tutorId: string, role: string) => {
 
-  if (!Types.ObjectId.isValid(courseId)) throw new ApiError(400,"Invalid Course ID!");
+  if (!Types.ObjectId.isValid(courseId)) throw new ApiError(400, "Invalid Course ID!");
 
-  const {
-    category,
-    contentModules,
-    courseType,
-    creditCost,
-    description,
-    courseSkills,
-    price,
-    thumbnailUrl,
-    courseLevel,
-    title
-  } = input;
-
-  if(role !== "premiumTutor" && courseType === "paid"){
-    throw new ApiError(400,"Only premium tutor can create paid courses!");
+  if (role !== "premiumTutor" && input.courseType === "paid") {
+    throw new ApiError(400, "Only premium tutor can create paid courses!");
   }
 
-  const course = await Course.findOneAndUpdate({_id : courseId,tutorId},{
-    category,
-    contentModules,
-    courseType,
-    courseSkills,
-    courseLevel,
-    creditCost,
-    description,
-    price : role === "premiumTutor" ? price : 0,
-    thumbnailUrl,
-    title
-  },{returnDocument: "after" , runValidators : true});
+  // Build update object only with defined fields
+  const updateData: any = {};
+  const fields = [
+    'category', 'contentModules', 'courseType', 'creditCost',
+    'description', 'courseSkills', 'price', 'thumbnailUrl',
+    'courseLevel', 'title'
+  ];
 
-  if(!course) throw new ApiError(400,"Course creation failed!");
+  fields.forEach(field => {
+    const value = input[field as keyof Partial<ICourse>];
+    if (value !== undefined) {
+      if (field === 'price') {
+        updateData.price = role === "premiumTutor" ? value : 0;
+      } else {
+        updateData[field] = value;
+      }
+    }
+  });
 
-  return course ;
-}
+  const course = await Course.findOneAndUpdate(
+    { _id: courseId, tutorId },
+    { $set: updateData },
+    { returnDocument: "after", runValidators: true }
+  );
 
-export const changeStatus = async (status:PCourse,id:string,tutorId:string) => {
-
-  if (!Types.ObjectId.isValid(id)) throw new ApiError(400,"Invalid Course ID!");
-
-  const course = await Course.findOneAndUpdate({_id : id,tutorId},{ status },{returnDocument: "after",runValidators:true});
-  if(!course) throw new ApiError(400,"Course creation failed!");
+  if (!course) throw new ApiError(400, "Course update failed or not found!");
 
   return course;
 }
 
-export const getCourses = async (query:TQuery, userId:Types.ObjectId | string) => {
+export const changeStatus = async (status: PCourse, id: string, tutorId: string) => {
+
+  if (!Types.ObjectId.isValid(id)) throw new ApiError(400, "Invalid Course ID!");
+
+  const course = await Course.findOneAndUpdate({ _id: id, tutorId }, { status }, { returnDocument: "after", runValidators: true });
+  if (!course) throw new ApiError(400, "Course creation failed!");
+
+  return course;
+}
+
+export const getCourses = async (query: TQuery, userId: Types.ObjectId | string) => {
 
   const queryObj:Partial<QueryType> = {}
   let sortObj:SortType = {}
@@ -104,36 +103,36 @@ export const getCourses = async (query:TQuery, userId:Types.ObjectId | string) =
   const {limit,page} = query ;
   const skip = (page-1) * limit ;
 
-  if(query.c){
-    queryObj.category = query.c ;
+  if (query.c) {
+    queryObj.category = query.c;
 
-  }else if(userId && query.recommended){
+  } else if (userId && query.recommended) {
 
     const user = await User.findById(userId)
-    .select("studentProfile.interests studentProfile.skills")
-    .lean();
+      .select("studentProfile.interests studentProfile.skills")
+      .lean();
     const interests = user?.studentProfile?.interests ?? []
     const skills = user?.studentProfile?.skills ?? []
 
     queryObj.$or = [
-      {category : {$in : interests}},
-      {courseSkills : {$in :skills}}
+      { category: { $in: interests } },
+      { courseSkills: { $in: skills } }
     ]
   }
 
-  if(query.type){
-    queryObj.courseType = query.type ; 
+  if (query.type) {
+    queryObj.courseType = query.type;
   }
 
-  if(query.q){
-    queryObj.title = { $regex: query.q, $options: "i" } ;
+  if (query.q) {
+    queryObj.title = { $regex: query.q, $options: "i" };
   }
 
-  if(query.sort === "latest"){
+  if (query.sort === "latest") {
     sortObj = { createdAt: -1 }
   }
 
-  if(query.sort === "popular"){
+  if (query.sort === "popular") {
     sortObj = {
       totalEnrollments: -1,
       ratingsAverage: -1
@@ -198,29 +197,29 @@ export const getCourse = async (courseId:string) => {
     path : "tutorId",
     select : "_id name avatarUrl email tutorProfile"
   })
-  .populate({
-    path : "contentModules",
-    select : "-contentUrl"
-  })
+    .populate({
+      path: "contentModules",
+      select: "-contentUrl"
+    })
 
-  if(!course){
-    throw new ApiError(404,"Course not found!");
+  if (!course) {
+    throw new ApiError(404, "Course not found!");
   }
-  return course ;
+  return course;
 }
 
-export const removeCourse = async (courseId:string, userId:Types.ObjectId) => {  
+export const removeCourse = async (courseId: string, userId: Types.ObjectId) => {
 
-  const user = await User.findOne({_id : userId, "tutorProfile.createdCourses" : courseId}).lean();
+  const user = await User.findOne({ _id: userId, "tutorProfile.createdCourses": courseId }).lean();
 
-  if(!user){
-    throw new ApiError(403,"This course does not belong to the tutor.");
+  if (!user) {
+    throw new ApiError(403, "This course does not belong to the tutor.");
   }
 
-  const course = await Course.deleteOne({_id : courseId});
-  if(course.deletedCount === 0)throw new ApiError(404,"Course not found!");
+  const course = await Course.deleteOne({ _id: courseId });
+  if (course.deletedCount === 0) throw new ApiError(404, "Course not found!");
 
-  await User.updateOne({_id : userId},{$pull : {"tutorProfile.createdCourses" : courseId}});
+  await User.updateOne({ _id: userId }, { $pull: { "tutorProfile.createdCourses": courseId } });
 
   return true
 }
@@ -259,12 +258,12 @@ export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
   }
 }
 
-export const makeContent = async (input:Required<IContent>,courseId:string) => {
+export const makeContent = async (input: Required<IContent>, courseId: string) => {
 
-  const {contentUrl,duration,summary,thumbnailUrl,title} = input ;
+  const { contentUrl, duration, summary, thumbnailUrl, title } = input;
 
   const course = await Course.findById(courseId).lean();
-  if(!course)throw new ApiError(404,"No course found!");
+  if (!course) throw new ApiError(404, "No course found!");
 
   const content = await Content.create({
     courseId,
@@ -275,9 +274,9 @@ export const makeContent = async (input:Required<IContent>,courseId:string) => {
     title
   });
 
-  await Course.updateOne({_id : courseId},{$push:{contentModules : content._id}});
+  await Course.updateOne({ _id: courseId }, { $push: { contentModules: content._id } });
 
-  return content ;
+  return content;
 
 }
 
