@@ -3,7 +3,6 @@ import { razorpayCreditOrder, verifyPayment, walletSummary } from "./wallet.serv
 import { QuerySchema } from "./wallet.validation";
 import { ApiError } from "../../utils/ApiError";
 import { ApiResponse } from "../../utils/ApiResponse";
-import { CREDIT_VALUE } from "./wallet.constant";
 
 
 
@@ -37,7 +36,7 @@ export const createCreditOrder = async (req:Request, res:Response, next:NextFunc
     const { amount } = req.body ;
     if(!amount || amount < 0)throw new ApiError(400,"Enter a valid amount!");
 
-    const order = await razorpayCreditOrder(amount,req.user?._id);
+    const order:any = await razorpayCreditOrder(amount,req.user?._id);
 
     res.status(201).json(
       new ApiResponse("Credit Order created!", order, true)
@@ -57,6 +56,16 @@ export const verifyCreditPayment = async (req:Request, res:Response, next:NextFu
       new ApiResponse("Payment verified",null,true)
     );
     
+  }catch(error){
+    next(error);
+  }
+}
+
+export const verifyUpi = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const {upi} = req.body ;
+
+
   }catch(error){
     next(error);
   }

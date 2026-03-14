@@ -17,11 +17,14 @@ export const walletSummary = async (query:IQuery,userId:Types.ObjectId) => {
   if(query.refresh){    
     return {
       creditBalance : user.userCreditBalance,
-      creditValue : user.userCreditBalance * CREDIT_VALUE
+      creditValue : user.userCreditBalance * CREDIT_VALUE,
+      creditConst : CREDIT_VALUE
     }
   }
 
-  const transactions = await Transaction.find({userId, status : {$ne : "initialized", $eq : query.status }})
+  const status = query.status || {$ne : "initialized"};
+
+  const transactions = await Transaction.find({userId, status})
   .limit(query.limit)
   .sort({createdAt : -1});
 

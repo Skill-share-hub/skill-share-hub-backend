@@ -16,7 +16,7 @@ const transactionSchema = new Schema<ITransaction>({
 
   type : {
     type : String,
-    enum : ["credit_purchase" , "credit_withdraw" , "course_purchase" , "credit_convert"],
+    enum : ["credit_purchase" , "credit_withdraw" , "course_purchase"],
     required : true
   },
 

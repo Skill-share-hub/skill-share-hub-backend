@@ -1,1 +1,1 @@
-export const CREDIT_VALUE = 50 ;
+export const CREDIT_VALUE = 0.5 ;
