@@ -2,6 +2,7 @@ import { validate } from "../../middlewares/validate.middleware";
 import { updateUserSchema } from "./user.validation";
 import {
   getUserProfile,
+  updateRoleController,
   updateUserProfile,
 } from "./user.controller";
 import { authenticate } from "../../middlewares/auth.middleware";
@@ -28,5 +29,6 @@ router.put(
     validate(updateUserSchema),
     updateUserProfile
 );
+router.patch("/role", authenticate, updateRoleController)
 
 export default router;

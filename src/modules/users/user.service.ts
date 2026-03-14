@@ -1,6 +1,7 @@
 import { User } from "./user.model";
 import { ApiError } from "../../utils/ApiError";
 import "../courses/course.model"; // Ensure Course model is registered for population
+import { UserRole } from "./user.types";
 
 export const getUserProfileService = async (userId: string, role: string) => {
   let user;
@@ -19,6 +20,28 @@ export const getUserProfileService = async (userId: string, role: string) => {
 
   return user;
 };
+
+export const updateUserRoleService = async (userId: string, role: Extract<UserRole, "tutor" | "student">) => {
+  const allowedRoles = ["student", "tutor"];
+
+if (!allowedRoles.includes(role)) {
+  throw new ApiError(400, "Invalid role");
+}
+ const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: { role } },
+    {
+      new: true,
+      runValidators: true
+    }
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(404, "User not found");
+  }
+
+  return updatedUser;
+}
 
 export const updateUserProfileService = async (
   userId: string,

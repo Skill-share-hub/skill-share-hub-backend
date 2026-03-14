@@ -1,11 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import * as userService from "./user.service";
 import { ApiResponse } from "../../utils/ApiResponse";
+import { UserRole } from "./user.types";
 
-/**
- * Get user profile
- * @route GET /api/v1/users/profile
- */
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?._id;
@@ -21,10 +18,19 @@ export const getUserProfile = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-/**
- * Update user profile
- * @route PATCH /api/v1/users/profile
- */
+export const updateRoleController = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?._id;
+    const { role } = req.body;
+    const updatedUser = await userService.updateUserRoleService(userId, role as Extract<UserRole, "tutor" | "student">);
+    return res.status(200).json(
+      new ApiResponse("Role updated successfully", updatedUser)
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
 export const updateUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?._id;
