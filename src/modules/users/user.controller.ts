@@ -1,127 +1,52 @@
-import { Request, Response } from "express";
-import { User } from "./user.model";
-import { ApiError } from "../../utils/ApiError";
+import { NextFunction, Request, Response } from "express";
+import * as userService from "./user.service";
+import { ApiResponse } from "../../utils/ApiResponse";
 
-// Get user profile
-
-export const getUserProfile = async (req: Request, res: Response) => {
+/**
+ * Get user profile
+ * @route GET /api/v1/users/profile
+ */
+export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?._id;
-    const user = await User.findById(userId)
-      .select("-passwordHash");
+    const role = req.user?.role;
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
+    const user = await userService.getUserProfileService(userId, role);
 
-    return res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch {
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch profile",
-    });
+    return res.status(200).json(
+      new ApiResponse("Profile fetched successfully", user)
+    );
+  } catch (error) {
+    next(error);
   }
 };
 
-// Update user profile
-export const updateUserProfile = async (req: Request, res: Response) => {
+/**
+ * Update user profile
+ * @route PATCH /api/v1/users/profile
+ */
+export const updateUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?._id;
     const { name, studentProfile, tutorProfile } = req.body;
     let { avatarUrl } = req.body;
 
-    // If a file was uploaded, use its URL
+    // If a file was uploaded by multer, its location is used
     if (req.file) {
-      avatarUrl = (req.file as any).location;
+      avatarUrl = (req.file as any).location || (req.file as any).path;
     }
 
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    // Basic updates
-    if (name) user.name = name;
-    if (avatarUrl) user.avatarUrl = avatarUrl;
-
-    // Student profile
-    if (studentProfile) {
-      user.studentProfile = {
-        bio: "",
-        skills: [],
-        ...(user.studentProfile || {}),
-        ...studentProfile,
-      };
-    }
-
-    // Tutor profile update
-    if (tutorProfile) {
-      if (user.role === "student") {
-        user.role = "tutor";
-      }
-
-      // Ensure tutorProfile is initialized if this is a new tutor
-      if (!user.tutorProfile) {
-        user.tutorProfile = {
-          bio: "",
-          skills: [],
-          createdCourses: [],
-          totalCreditsEarned: 0,
-          monetizationEligible: false,
-          ratingsAverage: 0,
-          reviewCount: 0,
-          earningsTotal: 0,
-        };
-      }
-
-      // Only update fields allowed to be changed by the user
-      if (tutorProfile.bio !== undefined) user.tutorProfile.bio = tutorProfile.bio;
-      if (tutorProfile.skills !== undefined) user.tutorProfile.skills = tutorProfile.skills;
-      if (tutorProfile.experience !== undefined) user.tutorProfile.experience = tutorProfile.experience;
-      
-      if (tutorProfile.payoutDetails) {
-        user.tutorProfile.payoutDetails = {
-          ...user.tutorProfile.payoutDetails,
-          ...tutorProfile.payoutDetails,
-        };
-      }
-    }
-    
-const isStudentComplete =
-  user.name &&
-  user.avatarUrl;
-
-const isTutorComplete =
-  user.name &&
-  user.avatarUrl &&
-  user.tutorProfile?.bio &&
-  user.tutorProfile?.skills?.length;
-
-if (user.role === "student") {
-  user.isProfileCompleted = Boolean(isStudentComplete);
-}
-
-if (user.role === "tutor" || user.role === "premiumTutor") {
-  user.isProfileCompleted = Boolean(isTutorComplete);
-}
-    await user.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Profile updated successfully",
-      data: user,
+    const updatedUser = await userService.updateUserProfileService(userId, {
+      name,
+      avatarUrl,
+      studentProfile,
+      tutorProfile,
     });
-  } catch { 
-     throw new ApiError(500, "Profile update failed!");
+
+    return res.status(200).json(
+      new ApiResponse("Profile updated successfully", updatedUser)
+    );
+  } catch (error) {
+    next(error);
   }
 };
