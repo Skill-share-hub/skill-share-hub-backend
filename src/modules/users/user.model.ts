@@ -38,6 +38,10 @@ export interface IUser {
     };
   };
 
+  userTransactions : Types.ObjectId[];
+
+  userCreditBalance : number
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -120,6 +124,19 @@ const userSchema = new Schema<IUser>(
         accountInfo: { type: Object },
       },
     },
+
+    userTransactions : [
+      {
+        type : Schema.Types.ObjectId,
+        ref : "userTransactions"
+      }
+    ],
+
+    userCreditBalance : {
+      type : Number,
+      default : 0
+    },
+
   },
   { timestamps: true }
 );

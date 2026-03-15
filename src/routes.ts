@@ -5,6 +5,8 @@ import userRoutes from './modules/users/user.routes';
 import courseRoutes from './modules/courses/course.routes';
 import dashboardRouter from './modules/dashboard/dashboard.routes';
 import tutorRoutes from "./modules/tutors/tutor.routes";
+import walletRoutes from './modules/wallet/wallet.routes'
+
 const router = Router();
 
 router.get('/health', (_req, res) => {
@@ -19,4 +21,6 @@ router.use('/users', userRoutes);
 router.use('/courses',courseRoutes);
 router.use('/dashboard',dashboardRouter)
 router.use("/tutor", tutorRoutes);
+router.use('/wallet', walletRoutes);
+
 export default router;

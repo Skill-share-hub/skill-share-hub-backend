@@ -22,7 +22,7 @@ export const ContentSchema = z.object({
   contentUrl : z.string(),
   summary : z.string(),
   thumbnailUrl : z.string(),
-  duration : z.coerce.number().min(60 , "video should be atleast 1 minute")
+  duration : z.coerce.number().min(1 , "video should be atleast 1 minute")
 }).partial();
 
 const baseSchema = z.object({
