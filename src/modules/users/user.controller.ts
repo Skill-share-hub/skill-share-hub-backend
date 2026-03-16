@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import * as userService from "./user.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { UserRole } from "./user.types";
+import { Types } from "mongoose";
 
 export const getUserProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -54,5 +55,80 @@ export const updateUserProfile = async (req: Request, res: Response, next: NextF
     );
   } catch (error) {
     next(error);
+  }
+};
+
+
+export const getSavedCoursesController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const userId = req.user?._id;
+    if (!userId) {
+  return res.status(401).json({
+    success: false,
+    message: "Unauthorized",
+  });
+}
+    const courses = await userService.getSavedCourses(userId);
+
+    return res.status(200).json({
+      success: true,
+      data: courses,
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch saved courses",
+    });
+
+  }
+};
+
+export const toggleSavedCourseController = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+
+    const userId = req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const { courseId } = req.body;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: "courseId is required",
+      });
+    }
+
+    const saved = await userService.toggleSavedCourse(
+      userId,
+      new Types.ObjectId(courseId)
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: saved,
+    });
+
+  } catch {
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update saved courses",
+    });
+
   }
 };

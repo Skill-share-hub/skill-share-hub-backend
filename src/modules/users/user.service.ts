@@ -2,6 +2,7 @@ import { User } from "./user.model";
 import { ApiError } from "../../utils/ApiError";
 import "../courses/course.model"; // Ensure Course model is registered for population
 import { UserRole } from "./user.types";
+import { Types } from "mongoose";
 
 export const getUserProfileService = async (userId: string, role: string) => {
   let user;
@@ -136,4 +137,52 @@ export const updateUserProfileService = async (
   }
 
   return userObj;
+};
+
+// getting the saved course of user
+export const getSavedCourses = async (userId: string) => {
+
+  const user = await User.findById(new Types.ObjectId(userId))
+    .populate({
+      path: "savedCourses",
+      select: "title thumbnailUrl tutorId ratingsAverage price creditCost",
+    });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user.savedCourses;
+};
+
+export const toggleSavedCourse = async (
+  userId: string,
+  courseId: Types.ObjectId
+) => {
+
+  const user = await User.findById(new Types.ObjectId(userId));
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const exists = user.savedCourses.some(
+    (id) => id.toString() === courseId.toString()
+  );
+
+  if (exists) {
+
+    user.savedCourses = user.savedCourses.filter(
+      (id) => id.toString() !== courseId.toString()
+    );
+
+  } else {
+
+    user.savedCourses.push(courseId);
+
+  }
+
+  await user.save();
+
+  return user.savedCourses;
 };

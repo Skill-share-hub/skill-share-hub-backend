@@ -14,7 +14,7 @@ export interface IUser {
 
   provider: "local" | "google";
   googleId?: string;
-
+savedCourses: Types.ObjectId[];
   studentProfile?: {
     bio: string;
     skills: string[];
@@ -87,6 +87,13 @@ const userSchema = new Schema<IUser>(
     googleId: {
       type: String,
     },
+    savedCourses: [
+  {
+    type: Schema.Types.ObjectId,
+    ref: "Course",
+    default: [],
+  },
+],
 
     // Student Profile
     studentProfile: {
