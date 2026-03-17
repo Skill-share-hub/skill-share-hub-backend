@@ -10,11 +10,14 @@ export interface IUser {
   passwordHash?: string;
   role: UserRole;
   isVerified: boolean;
-  isProfileCompleted:boolean;
+  isProfileCompleted: boolean;
 
   provider: "local" | "google";
   googleId?: string;
-savedCourses: Types.ObjectId[];
+
+  savedCourses: Types.ObjectId[];
+  enrolledCourses: Types.ObjectId[]; // ✅ Course IDs (fast access)
+
   studentProfile?: {
     bio: string;
     skills: string[];
@@ -24,7 +27,7 @@ savedCourses: Types.ObjectId[];
   tutorProfile?: {
     bio: string;
     skills: string[];
-    createdCourses : Types.ObjectId[];
+    createdCourses: Types.ObjectId[];
     experience?: string;
     totalCreditsEarned: number;
     monetizationEligible: boolean;
@@ -38,12 +41,9 @@ savedCourses: Types.ObjectId[];
     };
   };
 
-  userTransactions : Types.ObjectId[];
-  enrolledCourses: Types.ObjectId[]; // Fast-access for student enrollments
+  userTransactions: Types.ObjectId[];
 
-  userCreditBalance : number;
-
-  enrolledCourses : Types.ObjectId[];
+  userCreditBalance: number;
 
   createdAt: Date;
   updatedAt: Date;
@@ -62,7 +62,7 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
     },
 
-    passwordHash: { type: String }, // ✅ not required
+    passwordHash: { type: String },
 
     role: {
       type: String,
@@ -75,12 +75,12 @@ const userSchema = new Schema<IUser>(
       default: false,
     },
 
-    isProfileCompleted:{
+    isProfileCompleted: {
       type: Boolean,
       default: false,
     },
 
-    // 🔐 Google Auth Fields
+    // Auth
     provider: {
       type: String,
       enum: ["local", "google"],
@@ -90,6 +90,8 @@ const userSchema = new Schema<IUser>(
     googleId: {
       type: String,
     },
+
+    // Saved Courses
     savedCourses: [
       {
         type: Schema.Types.ObjectId,
@@ -98,11 +100,13 @@ const userSchema = new Schema<IUser>(
       },
     ],
 
-    enrolledCourses : [
+    // ✅ FIXED: Only one enrolledCourses (Course reference)
+    enrolledCourses: [
       {
-        type : Schema.Types.ObjectId,
-        ref : "Enrollment"
-      }
+        type: Schema.Types.ObjectId,
+        ref: "Course",
+        default: [],
+      },
     ],
 
     // Student Profile
@@ -118,11 +122,11 @@ const userSchema = new Schema<IUser>(
       skills: { type: [String], default: [] },
       experience: { type: String },
 
-      createdCourses : [
+      createdCourses: [
         {
-          type : Schema.Types.ObjectId,
-          ref : "Course"
-        }
+          type: Schema.Types.ObjectId,
+          ref: "Course",
+        },
       ],
 
       totalCreditsEarned: { type: Number, default: 0 },
@@ -142,25 +146,10 @@ const userSchema = new Schema<IUser>(
       },
     },
 
-    userTransactions : [
-      {
-        type : Schema.Types.ObjectId,
-        ref : "userTransactions"
-      }
-    ],
-
-    userCreditBalance : {
-      type : Number,
-      default : 0
+    userCreditBalance: {
+      type: Number,
+      default: 0,
     },
-
-    enrolledCourses: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Course",
-      },
-    ],
-
   },
   { timestamps: true }
 );

@@ -126,10 +126,22 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       razorpayOrderId: `wallet_${Date.now()}`
     }], { session });
 
+    const totalContents = course.contentModules?.length || 0;
+
     const enrollment = new Enrollment({
       userId,
       courseId,
-      status: "active"
+      status: "active",
+      totalContents,      // Added: total content count initializing
+      progress: 0,        // Added: initial progress set to 0
+      // completedAt is left undefined as per requirement
+      courseSnapshot: {
+        title: course.title,
+        thumbnail: course.thumbnailUrl,
+        price: course.price,
+        courseType: course.courseType,
+        creditCost: course.creditCost
+      }
     });
     await enrollment.save({ session });
     
@@ -226,10 +238,22 @@ export const verifyRazorpayPayment = async (
       throw new ApiError(400, "Already enrolled in this course");
     }
 
+    const totalContents = course.contentModules?.length || 0;
+
     await Enrollment.create([{
       userId,
       courseId,
-      status: "active"
+      status: "active",
+      totalContents,      // Added: total content count initializing 
+      progress: 0,        // Added: initial progress set to 0
+      // completedAt is left undefined as per requirement
+      courseSnapshot: {
+        title: course.title,
+        thumbnail: course.thumbnailUrl,
+        price: course.price,
+        courseType: course.courseType,
+        creditCost: course.creditCost
+      }
     }], { session });
 
     // Add course to user's enrolledCourses for fast access
