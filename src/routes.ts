@@ -7,6 +7,7 @@ import dashboardRouter from './modules/dashboard/dashboard.routes';
 import tutorRoutes from "./modules/tutors/tutor.routes";
 import walletRoutes from './modules/wallet/wallet.routes';
 import paymentRoutes from './modules/payments/routes/payment.routes';
+import enrollmentRoutes from './modules/enrollments/enrollments.routes'
 
 const router = Router();
 
@@ -24,5 +25,6 @@ router.use('/dashboard',dashboardRouter)
 router.use("/tutor", tutorRoutes);
 router.use('/wallet', walletRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/enrollments',enrollmentRoutes);
 
 export default router;

@@ -1,13 +1,12 @@
 import { NextFunction, Request,Response } from "express"
 import { QuerySchema, type ICourse } from "./course.validation"
-import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, premiumCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
+import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
 import { MulterFiles } from "./course.type";
 import { COURSE_CATEGORIES } from "./course.constants";
-
 
 
 export const getCourseCategories = async (
@@ -232,19 +231,5 @@ export const deleteContent = async (req:Request, res:Response, next:NextFunction
     )
   }catch(error){
     next(error)
-  }
-}
-
-export const getPremiumCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
-  try{
-    const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
-    const course = await premiumCourse(courseId);
-
-    res.status(200).json(
-      new ApiResponse("Course Found!",course,true)
-    );
-
-  }catch(error){
-    next(error);
   }
 }

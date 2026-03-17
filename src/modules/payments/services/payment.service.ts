@@ -1,7 +1,7 @@
 import { Course } from "../../courses/course.model";
 import { User } from "../../users/user.model";
 import { Payment } from "../models/payment.model";
-import { Enrollment } from "../../courses/enrollment.model";
+import { Enrollment } from "../../enrollments/enrollment.model";
 import { Transaction } from "../../wallet/wallet.model";
 import { CREDIT_VALUE } from "../../wallet/wallet.constant";
 import { ApiError } from "../../../utils/ApiError";

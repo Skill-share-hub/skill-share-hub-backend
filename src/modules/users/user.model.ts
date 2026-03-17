@@ -41,7 +41,9 @@ savedCourses: Types.ObjectId[];
   userTransactions : Types.ObjectId[];
   enrolledCourses: Types.ObjectId[]; // Fast-access for student enrollments
 
-  userCreditBalance : number
+  userCreditBalance : number;
+
+  enrolledCourses : Types.ObjectId[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -89,12 +91,19 @@ const userSchema = new Schema<IUser>(
       type: String,
     },
     savedCourses: [
-  {
-    type: Schema.Types.ObjectId,
-    ref: "Course",
-    default: [],
-  },
-],
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Course",
+        default: [],
+      },
+    ],
+
+    enrolledCourses : [
+      {
+        type : Schema.Types.ObjectId,
+        ref : "Enrollment"
+      }
+    ],
 
     // Student Profile
     studentProfile: {
