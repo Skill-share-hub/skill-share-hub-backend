@@ -1,22 +1,14 @@
 import { validate } from "../../middlewares/validate.middleware";
 import { updateUserSchema } from "./user.validation";
-import {
-  getUserProfile,
-  updateRoleController,
-  updateUserProfile,
-} from "./user.controller";
+import {  getUserProfile,  updateRoleController,  updateUserProfile,} from "./user.controller";
 import { authenticate } from "../../middlewares/auth.middleware";
 import { Router } from "express";
 import { upload } from "../../utils/multer";
-
+import {  getSavedCoursesController,  toggleSavedCourseController} from "./user.controller";
 const router = Router();
 
 router.get("/profile", authenticate, getUserProfile);
-router.put(
-    "/profile",
-    authenticate,
-    upload.single("avatarUrl"),
-    (req, res, next) => {
+router.put("/profile", authenticate, upload.single("avatarUrl"),(req, res, next) => {
         // Parse stringified JSON fields from FormData
         if (typeof req.body.studentProfile === "string") {
             try { req.body.studentProfile = JSON.parse(req.body.studentProfile); } catch (e) {}
@@ -30,5 +22,7 @@ router.put(
     updateUserProfile
 );
 router.patch("/role", authenticate, updateRoleController)
+router.get("/saved", authenticate, getSavedCoursesController);
+router.post("/saved", authenticate, toggleSavedCourseController);
 
 export default router;
