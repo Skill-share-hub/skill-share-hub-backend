@@ -133,6 +133,13 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     });
     await enrollment.save({ session });
     
+    // Add course to user's enrolledCourses for fast access
+    await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { enrolledCourses: courseId } },
+      { session }
+    );
+    
     course.totalEnrollments = (course.totalEnrollments || 0) + 1;
     await course.save({ session });
 
@@ -224,6 +231,13 @@ export const verifyRazorpayPayment = async (
       courseId,
       status: "active"
     }], { session });
+
+    // Add course to user's enrolledCourses for fast access
+    await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { enrolledCourses: courseId } },
+      { session }
+    );
     
     course.totalEnrollments = (course.totalEnrollments || 0) + 1;
     await course.save({ session });

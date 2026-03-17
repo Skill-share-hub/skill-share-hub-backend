@@ -9,11 +9,13 @@ import { otpSchema } from './validators/otpSchema';
 import { registerSchema } from './validators/registerSchema';
 import { resetPasswordSchema } from './validators/resetPasswordSchema';
 
+import { authenticate } from '../../middlewares/auth.middleware';
+
 const authRouter = Router();
 
 authRouter.post('/register', validate(registerSchema), register);
 authRouter.post('/login', validate(loginSchema), login);
-authRouter.post('/logout', logout);
+authRouter.post('/logout', authenticate, logout);
 authRouter.post('/refresh', refresh);
 authRouter.post('/google', googleLogin);
 authRouter.post('/send-otp', validate(otpSchema), sendOtp);
