@@ -5,7 +5,8 @@ import userRoutes from './modules/users/user.routes';
 import courseRoutes from './modules/courses/course.routes';
 import dashboardRouter from './modules/dashboard/dashboard.routes';
 import tutorRoutes from "./modules/tutors/tutor.routes";
-import walletRoutes from './modules/wallet/wallet.routes'
+import walletRoutes from './modules/wallet/wallet.routes';
+import paymentRoutes from './modules/payments/routes/payment.routes';
 
 const router = Router();
 
@@ -22,5 +23,6 @@ router.use('/courses',courseRoutes);
 router.use('/dashboard',dashboardRouter)
 router.use("/tutor", tutorRoutes);
 router.use('/wallet', walletRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
