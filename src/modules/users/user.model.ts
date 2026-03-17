@@ -88,12 +88,12 @@ const userSchema = new Schema<IUser>(
       type: String,
     },
     savedCourses: [
-  {
-    type: Schema.Types.ObjectId,
-    ref: "Course",
-    default: [],
-  },
-],
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Course",
+        default: [],
+      },
+    ],
 
     // Student Profile
     studentProfile: {

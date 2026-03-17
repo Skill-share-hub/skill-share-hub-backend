@@ -314,18 +314,5 @@ export const removeContent =  async (contentId:string, courseId:string, userId:T
 
 }
 
-export const premiumCourse = async (courseId:string) => {
-  
-  const course = await Course.findById(courseId).populate({
-    path : "tutorId",
-    select : "_id name avatarUrl email tutorProfile"
-  })
-  .populate("contentModules");
-
-  if(!course){
-    throw new ApiError(404,"Course not found!");
-  }
-  return course ;
-}
 
 

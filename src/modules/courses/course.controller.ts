@@ -234,17 +234,3 @@ export const deleteContent = async (req:Request, res:Response, next:NextFunction
     next(error)
   }
 }
-
-export const getPremiumCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
-  try{
-    const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
-    const course = await premiumCourse(courseId);
-
-    res.status(200).json(
-      new ApiResponse("Course Found!",course,true)
-    );
-
-  }catch(error){
-    next(error);
-  }
-}
