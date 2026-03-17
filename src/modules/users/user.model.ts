@@ -39,6 +39,7 @@ export interface IUser {
   };
 
   userTransactions : Types.ObjectId[];
+  enrolledCourses: Types.ObjectId[]; // Fast-access for student enrollments
 
   userCreditBalance : number
 
@@ -136,6 +137,13 @@ const userSchema = new Schema<IUser>(
       type : Number,
       default : 0
     },
+
+    enrolledCourses: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
 
   },
   { timestamps: true }

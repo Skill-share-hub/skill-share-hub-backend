@@ -72,7 +72,11 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    const result = logoutUser(req.user._id);
+    if (!req.user?._id) {
+       throw new ApiError(401, "User not authenticated");
+    }
+
+    const result = await logoutUser(req.user._id);
 
     res.clearCookie("accessToken", {
       httpOnly: true,
@@ -89,6 +93,7 @@ export const logout = async (req: Request, res: Response) => {
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({
+      success: false,
       message: "Logout failed",
     });
   }
