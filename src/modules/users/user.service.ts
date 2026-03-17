@@ -160,29 +160,31 @@ export const toggleSavedCourse = async (
   courseId: Types.ObjectId
 ) => {
 
-  const user = await User.findById(new Types.ObjectId(userId));
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  const exists = user.savedCourses.some(
-    (id) => id.toString() === courseId.toString()
+  // try removing first
+  const removed = await User.findOneAndUpdate(
+    {
+      _id: userId,
+      savedCourses: courseId,
+    },
+    {
+      $pull: { savedCourses: courseId },
+    },
+    { new: true }
   );
 
-  if (exists) {
-
-    user.savedCourses = user.savedCourses.filter(
-      (id) => id.toString() !== courseId.toString()
-    );
-
-  } else {
-
-    user.savedCourses.push(courseId);
-
+  // if removed → return
+  if (removed) {
+    return removed.savedCourses;
   }
 
-  await user.save();
+  // otherwise → add
+  const added = await User.findByIdAndUpdate(
+    userId,
+    {
+      $addToSet: { savedCourses: courseId },
+    },
+    { new: true }
+  );
 
-  return user.savedCourses;
+  return added?.savedCourses;
 };
