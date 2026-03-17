@@ -104,8 +104,7 @@ const userSchema = new Schema<IUser>(
     enrolledCourses: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Course",
-        default: [],
+        ref: "Course"
       },
     ],
 

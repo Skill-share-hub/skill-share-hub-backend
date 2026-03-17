@@ -50,20 +50,20 @@ export const enrollmentById = async (courseId:string,userId:Types.ObjectId)=> {
 
 }
 
-export const markContentService = async (enrollmentId:string , userId:Types.ObjectId , payload:{contentId:string})=> {
+export const markContentService = async (courseId:string , userId:Types.ObjectId , payload:{contentId:string})=> {
     
     if(!payload.contentId) throw new ApiError(400,"Content id is required");
 
     const content = await Content.findById(payload.contentId);
     if(!content) throw new ApiError(404,"Content not found");
     
-    const enrollment = await Enrollment.findOne({_id:enrollmentId,userId});
+    const enrollment = await Enrollment.findOne({courseId,userId});
     if(!enrollment) throw new ApiError(404,"Enrollment not found");
 
     if(enrollment.completedContent.includes(content._id)){
-        await Enrollment.updateOne({_id:enrollmentId},{$pull:{completedContent:content._id}});
+        await Enrollment.updateOne({courseId,userId},{$pull:{completedContent:content._id}});
     }else{
-        await Enrollment.updateOne({_id:enrollmentId},{$push:{completedContent:content._id}});
+        await Enrollment.updateOne({courseId,userId},{$push:{completedContent:content._id}});
     }
 
     const progress = (enrollment.completedContent.length / enrollment.totalContents) * 100;

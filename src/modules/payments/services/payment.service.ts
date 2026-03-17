@@ -148,7 +148,7 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     // Add course to user's enrolledCourses for fast access
     await User.findByIdAndUpdate(
       userId,
-      { $addToSet: { enrolledCourses: courseId } },
+      { $addToSet: { enrolledCourses: enrollment._id } },
       { session }
     );
     

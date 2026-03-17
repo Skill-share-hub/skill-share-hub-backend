@@ -5,7 +5,7 @@ import { ApiResponse } from "../../utils/ApiResponse";
 
 export const getMyEnrollments = async (req:Request,res:Response,next:NextFunction):Promise<void> => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?._id;
         const status = req.query.status as string;
         const data = await enrolledCourses(userId,status);
         res.status(200).json(
@@ -18,9 +18,9 @@ export const getMyEnrollments = async (req:Request,res:Response,next:NextFunctio
 
 export const getEnrollmentById = async (req:Request,res:Response,next:NextFunction):Promise<void> => {
     try {
-        const userId = req.user?.id;
+        const userId = req.user?._id;
 
-        let courseId = req.query.courseId as string;
+        let courseId = req.params.id as string;
         if (Array.isArray(courseId)) {
             courseId = courseId[0];
         }
@@ -37,12 +37,12 @@ export const getEnrollmentById = async (req:Request,res:Response,next:NextFuncti
 
 export const markContent = async (req:Request,res:Response,next:NextFunction):Promise<void> => {
     try {
-        const userId = req.user?.id;
-        const enrollmentId = req.params.id as string;
+        const userId = req.user?._id;
+        const courseId = req.params.id as string;
 
         const payload = req.body as {contentId:string};
 
-        const data = await markContentService(enrollmentId,userId,payload);
+        const data = await markContentService(courseId,userId,payload);
 
         res.status(200).json(
             new ApiResponse("Content marked",data,true)
