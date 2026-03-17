@@ -93,7 +93,11 @@ export const CourseSchema = baseSchema.extend({
   totalEnrollments : z
   .number()
   .nonnegative("Should be Positive")
-  .optional()
+  .optional(),
+
+  courseDuration : z.number().default(0),
+  certified : z.boolean().default(false),
+  courseResources : z.array(z.string()).default([])
 })
 .refine(data => {
    if(data.courseType === "paid") return data.price

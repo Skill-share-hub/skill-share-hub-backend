@@ -40,7 +40,9 @@ savedCourses: Types.ObjectId[];
 
   userTransactions : Types.ObjectId[];
 
-  userCreditBalance : number
+  userCreditBalance : number;
+
+  enrolledCourses : Types.ObjectId[];
 
   createdAt: Date;
   updatedAt: Date;
@@ -93,6 +95,13 @@ const userSchema = new Schema<IUser>(
         ref: "Course",
         default: [],
       },
+    ],
+
+    enrolledCourses : [
+      {
+        type : Schema.Types.ObjectId,
+        ref : "Enrollment"
+      }
     ],
 
     // Student Profile

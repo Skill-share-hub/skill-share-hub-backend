@@ -48,6 +48,21 @@ const courseSchema = new Schema<ICourse>({
     type : [String],
     default : ["No skills"]
   },
+
+  courseDuration : {
+    type : Number,
+    default : 0
+  },
+
+  certified : {
+    type : Boolean,
+    default : false
+  },
+
+  courseResources : {
+    type : [String],
+    default : []
+  },
   
   creditCost : {
     type : Number,

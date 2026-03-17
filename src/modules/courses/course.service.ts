@@ -274,7 +274,12 @@ export const makeContent = async (input: Required<IContent>, courseId: string) =
     title
   });
 
-  await Course.updateOne({ _id: courseId }, { $push: { contentModules: content._id } });
+  await Course.updateOne({ _id: courseId }, 
+  { 
+    $push: { contentModules: content._id } ,
+    $inc : {courseDuration : duration}
+  }
+  );
 
   return content;
 

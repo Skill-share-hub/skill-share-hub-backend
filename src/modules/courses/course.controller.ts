@@ -1,13 +1,12 @@
 import { NextFunction, Request,Response } from "express"
 import { QuerySchema, type ICourse } from "./course.validation"
-import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, premiumCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
+import { changeStatus, editContent, editCourse, getCourse, getCourses, makeContent, makeCourse, removeContent, removeCourse, tutorCourses } from "./course.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
 import { MulterFiles } from "./course.type";
 import { COURSE_CATEGORIES } from "./course.constants";
-
 
 
 export const getCourseCategories = async (

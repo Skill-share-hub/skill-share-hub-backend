@@ -7,7 +7,8 @@ export interface IEnrollment {
   enrolledAt: Date;
   completedAt?: Date;
   progress: number;
-  completedLessons : Types.ObjectId[]
+  completedContent : Types.ObjectId[];
+  totalContents : number
 }
 
 const enrollmentSchema = new Schema<IEnrollment>({
@@ -17,13 +18,15 @@ const enrollmentSchema = new Schema<IEnrollment>({
   enrolledAt: { type: Date, default: Date.now },
   completedAt: { type: Date },
   progress: { type: Number, default: 0 },
+  totalContents : { type : Number, required : true},
 
-  completedLessons: [
+  completedContent: [
     {
       type: Schema.Types.ObjectId,
       ref: "Content",
     }
   ],
+
 }, { timestamps: true });
 
 // Prevent duplicate enrollments
