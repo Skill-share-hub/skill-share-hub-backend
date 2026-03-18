@@ -4,7 +4,7 @@ import { authorizeRoles } from '../../middlewares/role.middleware';
 import { validate } from '../../middlewares/validate.middleware';
 
 import { ContentSchema, CourseSchema, UpdateCourseSchema, UpdateStatusSchema } from './course.validation';
-import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getCourseCategories } from './course.controller';
+import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getCourseCategories, toggleSaveCourse } from './course.controller';
 import { upload } from '../../utils/multer';
 
 const router = Router();
@@ -84,3 +84,9 @@ router.delete('/:id',
 );
 
 export default router ;
+
+router.post('/:id/save',
+  authenticate,
+  authorizeRoles("student"),
+  toggleSaveCourse
+);

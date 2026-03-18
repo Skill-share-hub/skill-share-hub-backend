@@ -233,3 +233,31 @@ export const deleteContent = async (req:Request, res:Response, next:NextFunction
     next(error)
   }
 }
+
+export const toggleSaveCourse = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const courseId = req.params.id;
+    const userId = req.user?._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) throw new ApiError(404, "User not found");
+
+    const isSaved = user.savedCourses?.includes(courseId);
+
+    if (isSaved) {
+      user.savedCourses.pull(courseId);
+    } else {
+      user.savedCourses.push(courseId);
+    }
+
+    await user.save();
+
+    res.status(200).json(
+      new ApiResponse("Toggled save", { isSaved: !isSaved }, true)
+    );
+
+  } catch (error) {
+    next(error);
+  }
+};
