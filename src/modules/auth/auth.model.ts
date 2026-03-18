@@ -13,7 +13,11 @@ const RefreshTokenShema=new Schema({
     revoked:{
         type:Boolean,
         default:false,
-    }
+    },
+    revokedAt: {
+  type: Date,
+  expires: 60 * 60 * 24 * 7
+}
 })
 
 export const RefreshToken= model("RefreshToken",RefreshTokenShema)

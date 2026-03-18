@@ -96,10 +96,10 @@ export const loginUser = async (input: LoginInput): Promise<RegisterResponse> =>
 
   const accessToken = generateAccessToken(tokenPayload);
   const refreshToken = generateRefreshToken(tokenPayload);
+
 await RefreshToken.create({
   token: refreshToken,
   userId: user._id,
-  revoked: false
 });
   return {
     user: {
@@ -184,14 +184,14 @@ export const refreshTokens = async (refreshToken: string): Promise<RegisterRespo
 
       const storedToken = await RefreshToken.findOne({
     token: refreshToken,
-    userId: user._id,
-    revoked: false
+    userId: user._id
   });
   
   if (!storedToken) {
     throw new ApiError(401, "Invalid or expired refresh token");
   }
   storedToken.revoked = true;
+  storedToken.revokedAt = new Date();
   await storedToken.save();
 
     const tokenPayload = {
