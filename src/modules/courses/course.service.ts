@@ -85,19 +85,26 @@ export const editCourse = async (input: Partial<ICourse>, courseId: string, tuto
   return course;
 }
 
-export const changeStatus = async (status: PCourse, id: string, tutorId: string) => {
+type statusType = "pending" | "published" | "draft" ;
+
+export const changeStatus = async (status: statusType, id: string, tutorId: string) => {
 
   if (!Types.ObjectId.isValid(id)) throw new ApiError(400, "Invalid Course ID!");
 
-  const course = await Course.findOneAndUpdate({ _id: id, tutorId }, { status }, { returnDocument: "after", runValidators: true });
+  const course = await Course.findOne({ _id: id, tutorId });
   if (!course) throw new ApiError(400, "Course creation failed!");
+
+  if(!(course.contentModules.length > 0) )throw new ApiError(400,"Course cannot be published add contents");
+
+  course.status = status ;
+  await course?.save();
 
   return course;
 }
 
 export const getCourses = async (query: TQuery, userId: Types.ObjectId | string) => {
 
-  const queryObj:Partial<QueryType> = {}
+  const queryObj:Partial<QueryType> = {status : "published"}
   let sortObj:SortType = {}
   
   const {limit,page} = query ;
@@ -202,7 +209,7 @@ export const getCourse = async (courseId:string) => {
       select: "-contentUrl"
     })
 
-  if (!course) {
+  if (!course || course.status !== "published") {
     throw new ApiError(404, "Course not found!");
   }
   return course;
