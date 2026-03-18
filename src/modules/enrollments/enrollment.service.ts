@@ -61,13 +61,20 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     if(!enrollment) throw new ApiError(404,"Enrollment not found");
 
     if(enrollment.completedContent.includes(content._id)){
-        await Enrollment.updateOne({courseId,userId},{$pull:{completedContent:content._id}});
+
+        await Enrollment.updateOne(
+            {courseId,userId},
+            {$pull:{completedContent:content._id}}
+        );
     }else{
         await Enrollment.updateOne({courseId,userId},{$push:{completedContent:content._id}});
     }
 
-    const progress = (enrollment.completedContent.length / enrollment.totalContents) * 100;
-    enrollment.progress = progress;
+    const progress = ((enrollment.completedContent.length / enrollment.totalContents) * 100).toFixed(0);
+    const isCompleted = enrollment.completedContent.length === enrollment.totalContents ;
+
+    enrollment.status = isCompleted ? "completed" : "active"
+    enrollment.progress = Number(progress);
     await enrollment.save();
     
     return enrollment;

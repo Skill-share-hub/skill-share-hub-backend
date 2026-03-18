@@ -1,5 +1,6 @@
 export type QueryType = {
   category: string
+  status : string;
   courseType: string
   title: {
     $regex: string
