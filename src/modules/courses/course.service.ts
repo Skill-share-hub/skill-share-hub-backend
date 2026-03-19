@@ -177,7 +177,7 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
   })
   .sort(sortObj).skip(skip).limit(limit);
 
-  if(courses.length < limit || courses.length === 0 ){
+  if(courses.length < limit && query.recommended){
     courses = await Course.find()
     .populate({
       path : "tutorId",
