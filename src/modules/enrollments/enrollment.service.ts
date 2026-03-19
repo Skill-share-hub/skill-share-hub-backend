@@ -71,8 +71,8 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     if (!updatedEnrollment) throw new ApiError(404, "Enrollment not found");
 
     const progress = (
-        (updatedEnrollment.completedContent.length / updatedEnrollment.totalContents) * 100
-    ).toFixed(0);
+        (updatedEnrollment.completedContent.length / (updatedEnrollment.totalContents > 0 ? updatedEnrollment.totalContents : 1)) * 100
+    )?.toFixed(0) || 0;
 
     const isCompleted =
         updatedEnrollment.completedContent.length === updatedEnrollment.totalContents;
