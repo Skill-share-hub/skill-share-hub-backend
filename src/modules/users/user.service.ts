@@ -32,7 +32,7 @@ if (!allowedRoles.includes(role)) {
     userId,
     { $set: { role } },
     {
-      new: true,
+      returnDocument: 'after',
       runValidators: true
     }
   );
