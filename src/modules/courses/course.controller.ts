@@ -112,7 +112,6 @@ export const getAllCourses = async (req: Request, res: Response, next: NextFunct
 export const getSingleCourse = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id;
-    console.log("-----", courseId)
     const course = await getCourse(courseId);
 
     res.status(200).json(

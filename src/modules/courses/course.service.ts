@@ -209,7 +209,7 @@ export const getCourse = async (courseId:string) => {
       select: "-contentUrl"
     })
 
-  if (!course || course.status !== "published") {
+  if (!course) {
     throw new ApiError(404, "Course not found!");
   }
   return course;
