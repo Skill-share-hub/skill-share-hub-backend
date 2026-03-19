@@ -60,22 +60,27 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     const enrollment = await Enrollment.findOne({courseId,userId});
     if(!enrollment) throw new ApiError(404,"Enrollment not found");
 
-    if(enrollment.completedContent.includes(content._id)){
+    const updatedEnrollment = await Enrollment.findOneAndUpdate(
+        { courseId, userId },
+        enrollment.completedContent.includes(content._id)
+            ? { $pull: { completedContent: content._id } }
+            : { $push: { completedContent: content._id } },
+        {returnDocument: 'after',runValidators : true}
+    );
 
-        await Enrollment.updateOne(
-            {courseId,userId},
-            {$pull:{completedContent:content._id}}
-        );
-    }else{
-        await Enrollment.updateOne({courseId,userId},{$push:{completedContent:content._id}});
-    }
+    if (!updatedEnrollment) throw new ApiError(404, "Enrollment not found");
 
-    const progress = ((enrollment.completedContent.length / enrollment.totalContents) * 100).toFixed(0);
-    const isCompleted = enrollment.completedContent.length === enrollment.totalContents ;
+    const progress = (
+        (updatedEnrollment.completedContent.length / updatedEnrollment.totalContents) * 100
+    ).toFixed(0);
 
-    enrollment.status = isCompleted ? "completed" : "active"
-    enrollment.progress = Number(progress);
-    await enrollment.save();
-    
-    return enrollment;
+    const isCompleted =
+        updatedEnrollment.completedContent.length === updatedEnrollment.totalContents;
+
+    updatedEnrollment.status = isCompleted ? "completed" : "active";
+    updatedEnrollment.progress = Number(progress);
+
+    await updatedEnrollment.save();
+
+    return updatedEnrollment;
 }
