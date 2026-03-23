@@ -16,7 +16,7 @@ export interface IUser {
   googleId?: string;
 
   savedCourses: Types.ObjectId[];
-  enrolledCourses: Types.ObjectId[]; // ✅ Course IDs (fast access)
+  enrolledCourses: Types.ObjectId[];
 
   studentProfile?: {
     bio: string;
@@ -100,11 +100,10 @@ const userSchema = new Schema<IUser>(
       },
     ],
 
-    // ✅ FIXED: Only one enrolledCourses (Course reference)
     enrolledCourses: [
       {
         type: Schema.Types.ObjectId,
-        ref: "Course"
+        ref: "Enrollment"
       },
     ],
 
