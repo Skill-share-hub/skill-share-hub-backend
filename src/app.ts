@@ -23,8 +23,8 @@ app.use(cookieParser());
 app.use(globalRateLimiter);
 
 // API Routes
-app.use('/api', apiRoutes);
-app.use(notFoundHandler);
+app.use('/api', apiRoutes); 
+app.use(notFoundHandler); 
 app.use(errorHandler);
 
 export default app;
