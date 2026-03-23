@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { env } from './config/env';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import apiRoutes from './routes';
+import { globalRateLimiter } from './middlewares/rateLimitting.middleware';
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(globalRateLimiter);
 
 // API Routes
 app.use('/api', apiRoutes);

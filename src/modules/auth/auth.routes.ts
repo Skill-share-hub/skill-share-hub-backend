@@ -10,17 +10,18 @@ import { registerSchema } from './validators/registerSchema';
 import { resetPasswordSchema } from './validators/resetPasswordSchema';
 
 import { authenticate } from '../../middlewares/auth.middleware';
+import { authLimiter, otpLimiter } from '../../middlewares/rateLimitting.middleware';
 
 const authRouter = Router();
 
 authRouter.post('/register', validate(registerSchema), register);
-authRouter.post('/login', validate(loginSchema), login);
+authRouter.post('/login',authLimiter, validate(loginSchema), login);
 authRouter.post('/logout', authenticate, logout);
 authRouter.post('/refresh', refresh);
 authRouter.post('/google', googleLogin);
-authRouter.post('/send-otp', validate(otpSchema), sendOtp);
-authRouter.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
-authRouter.post('/reset-password', validate(resetPasswordSchema), resetPassword);
+authRouter.post('/send-otp',otpLimiter, validate(otpSchema), sendOtp);
+authRouter.post('/forgot-password',otpLimiter, validate(forgotPasswordSchema), forgotPassword);
+authRouter.post('/reset-password',otpLimiter, validate(resetPasswordSchema), resetPassword);
 
 
 

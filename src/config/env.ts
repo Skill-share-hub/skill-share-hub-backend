@@ -47,5 +47,6 @@ export const env = {
   awsSecretKey : getEnv("AWS_SECRET_KEY"),
   awsAccessKey : getEnv("AWS_ACCESS_KEY"),
   razorpayKeyId : getEnv("RAZORPAY_KEY_ID"),
-  razorpayKeySecret : getEnv("RAZORPAY_KEY_SECRET")
+  razorpayKeySecret : getEnv("RAZORPAY_KEY_SECRET"),
+  brevoApiKey: getEnv("BREVO_API_KEY"),
 };
