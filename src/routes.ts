@@ -18,7 +18,7 @@ router.get('/health', (_req, res) => {
   });
 });
 
-router.use('/auth', authRouter);
+router.use('/auth',authRouter);
 router.use('/users', userRoutes);
 router.use('/courses',courseRoutes);
 router.use('/dashboard',dashboardRouter)

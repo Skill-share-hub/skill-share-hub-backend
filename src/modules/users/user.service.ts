@@ -12,8 +12,25 @@ export const getUserProfileService = async (userId: string, role: string) => {
     ? "-studentProfile" 
     : "-tutorProfile";
 
-  user = await User.findOne({ _id: userId, role: role })
+  const query = User.findOne({ _id: userId, role: role })
     .select(`${projection} ${roleSpecificExclusion}`);
+
+  if (role === "student") {
+    query.populate({
+      path: "enrolledCourses",
+      select: "courseId progress",
+      populate: {
+        path: "courseId",
+        select: "title thumbnailUrl tutorId",
+        populate: {
+          path: "tutorId",
+          select: "name"
+        }
+      }
+    });
+  }
+  user = await query;
+
 
   if (!user) {
     throw new ApiError(404, "User not found");
@@ -109,7 +126,7 @@ export const updateUserProfileService = async (
   }
 
   // Profile completion check
-  const isStudentComplete = user.name && user.avatarUrl;
+  const isStudentComplete = user.name;
   const isTutorComplete =
     user.name &&
     user.avatarUrl &&

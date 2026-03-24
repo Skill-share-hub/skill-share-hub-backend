@@ -1,6 +1,6 @@
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../config/jwt';
 import { redisClient } from '../../config/redis';
-import { sendEmail } from '../../services/mail.service';
+import { sendEmail } from '../../services/brevo.service';
 import { ApiError } from '../../utils/ApiError';
 import { otpTemplate, registerTemplate } from '../../utils/email.templates';
 import generateOtp from '../../utils/generateOtp';

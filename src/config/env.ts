@@ -33,11 +33,8 @@ export const env = {
   clientUrl: getEnv("CLIENT_URL"),
   googleClientId: getEnv("GOOGLE_CLIENT_ID"),
   redisUrl: getEnv("REDIS_URL"),
-  emailHost: getEnv("MAIL_HOST"),
-  emailPort: parsePort(getEnv("MAIL_PORT", "587")),
-  emailSecure: getEnv("MAIL_SECURE", "false") === "true",
+  
   emailUser: getEnv("MAIL_USER"), 
-  emailPass: getEnv("MAIL_PASS"),
   redisUsername:getEnv("REDIS_USERNAME"),
   redisPassword:getEnv("REDIS_PASSWORD"),
   redisHost:getEnv("REDIS_HOST"),
@@ -47,5 +44,6 @@ export const env = {
   awsSecretKey : getEnv("AWS_SECRET_KEY"),
   awsAccessKey : getEnv("AWS_ACCESS_KEY"),
   razorpayKeyId : getEnv("RAZORPAY_KEY_ID"),
-  razorpayKeySecret : getEnv("RAZORPAY_KEY_SECRET")
+  razorpayKeySecret : getEnv("RAZORPAY_KEY_SECRET"),
+  brevoApiKey: getEnv("BREVO_API_KEY"),
 };
