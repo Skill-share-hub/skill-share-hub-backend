@@ -60,11 +60,13 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     const enrollment = await Enrollment.findOne({courseId,userId});
     if(!enrollment) throw new ApiError(404,"Enrollment not found");
 
+    const alreadyCompleted = enrollment.completedContent.includes(content._id)
+
     const updatedEnrollment = await Enrollment.findOneAndUpdate(
         { courseId, userId },
-        enrollment.completedContent.includes(content._id)
-            ? { $pull: { completedContent: content._id } }
-            : { $push: { completedContent: content._id } },
+            alreadyCompleted
+            ? { $pull: { completedContent: content._id } , totalWatchTime : {$inc : -(content.duration ?? 1)} }
+            : { $push: { completedContent: content._id } , totalWatchTime : {$inc : content.duration} },
         {returnDocument: 'after',runValidators : true}
     );
 
@@ -82,5 +84,8 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
 
     await updatedEnrollment.save();
 
-    return updatedEnrollment;
+    return {
+        enrollment : updatedEnrollment,
+        completed : !alreadyCompleted
+    };
 }

@@ -7,6 +7,7 @@ export interface IEnrollment {
   enrolledAt: Date;
   completedAt?: Date;
   progress: number;
+  totalWatchTime : number;
   completedContent : Types.ObjectId[];
   totalContents : number
   courseSnapshot: {
@@ -26,6 +27,10 @@ const enrollmentSchema = new Schema<IEnrollment>({
   completedAt: { type: Date },
   progress: { type: Number, default: 0 },
   totalContents : { type : Number, required : true},
+  totalWatchTime : {
+    type : Number,
+    default : 0
+  },
   courseSnapshot: {
     title: { type: String, required: true },
     thumbnail: { type: String, required: true },
