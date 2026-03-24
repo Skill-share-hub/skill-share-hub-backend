@@ -11,13 +11,14 @@ export const enrolledCourses = async (userId:Types.ObjectId,status:string)=> {
     }
     const courses = await Enrollment.find({status,userId});
 
-    const inProgress = await Enrollment.find({status:"active",userId}).countDocuments();
-    const completed = await Enrollment.find({status:"completed",userId}).countDocuments();
+    const inProgress = await Enrollment.countDocuments({status:"active",userId});
+    const completed = await Enrollment.countDocuments({status:"completed",userId});
+    const totalEnrollment = await Enrollment.countDocuments({userId});
 
     const user = await User.findById(userId).select("savedCourses");
 
     return {
-        totalEnrollment : courses.length,
+        totalEnrollment,
         courses,
         inProgress,
         completed,

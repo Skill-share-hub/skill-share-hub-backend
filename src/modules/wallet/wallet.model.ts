@@ -14,6 +14,16 @@ const transactionSchema = new Schema<ITransaction>({
     required : true
   },
 
+  currency : {
+    type : Number,
+    required : true
+  },
+
+  creditBalance : {
+    type : Number,
+    required : true
+  },
+
   type : {
     type : String,
     enum : ["credit_purchase" , "credit_withdraw" , "course_purchase"],

@@ -47,6 +47,8 @@ export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId)
     }
 
     const order = await razorpay.orders.create(options);
+    const user = await User.findById(userId).select("userCreditBalance").lean();
+    if(!user)throw new ApiError(404,"User not found!")
 
     await Transaction.create({
       userId,
@@ -54,7 +56,9 @@ export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId)
       method : "razor_pay",
       razorpayOrderId : order.id,
       status : "initialized",
-      type : "credit_purchase"
+      type : "credit_purchase",
+      creditBalance : user.userCreditBalance  ,
+      currency : amount
     });
 
     return order ;
