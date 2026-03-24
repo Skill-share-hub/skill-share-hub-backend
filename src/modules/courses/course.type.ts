@@ -1,4 +1,5 @@
 export type QueryType = {
+  _id : any;
   category: string
   status : string;
   courseType: string

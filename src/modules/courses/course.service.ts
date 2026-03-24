@@ -110,14 +110,25 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
   const {limit,page} = query ;
   const skip = (page-1) * limit ;
 
+  let user = null ;
+
+  if(userId){
+    user = await User.findById(userId)
+    .select("enrolledCourses studentProfile.interests studentProfile.skills")
+    .lean();
+  }
+
   if (query.c) {
     queryObj.category = query.c;
 
-  } else if (userId && query.recommended) {
+  }
 
-    const user = await User.findById(userId)
-      .select("studentProfile.interests studentProfile.skills")
-      .lean();
+  if(user){
+    queryObj._id = {$nin : user?.enrolledCourses}
+  }
+  
+  if (user && query.recommended) {
+
     const interests = user?.studentProfile?.interests ?? []
     const skills = user?.studentProfile?.skills ?? []
 
@@ -178,7 +189,7 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
   .sort(sortObj).skip(skip).limit(limit);
 
   if(courses.length < limit && query.recommended){
-    courses = await Course.find()
+    courses = await Course.find({status : "published"})
     .populate({
       path : "tutorId",
       select : "_id name avatarUrl"
@@ -198,16 +209,25 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
 
 }
 
-export const getCourse = async (courseId:string) => {
-  const course = await Course.findById(courseId)
+export const getCourse = async (courseId:string,userId:Types.ObjectId | string) => {
+
+  const user = await User.findById(userId).select("enrolledCourses")
+
+  const course = await Course.findOne({
+    $and: [
+      { _id: courseId },
+      { _id: { $nin: user?.enrolledCourses } }
+    ]
+  })
   .populate({
     path : "tutorId",
     select : "_id name avatarUrl email tutorProfile"
   })
-    .populate({
-      path: "contentModules",
-      select: "-contentUrl"
-    })
+  .populate({
+    path: "contentModules",
+    select: "-contentUrl"
+  })
+  .lean();
 
   if (!course) {
     throw new ApiError(404, "Course not found!");
@@ -284,7 +304,7 @@ export const makeContent = async (input: Required<IContent>, courseId: string) =
   await Course.updateOne({ _id: courseId }, 
   { 
     $push: { contentModules: content._id } ,
-    $inc : {courseDuration : duration}
+    $inc : {courseDuration : duration }
   }
   );
 
