@@ -117,7 +117,7 @@ export const QuerySchema = z.object({
   q : z
   .string()
   .trim()
-  .min(2, "Search string must be at least 2 characters long")
+  .min(1, "Search string must be at least 2 characters long")
   .max(50, "Search string cannot exceed 50 characters")
   .optional(),
 

@@ -112,7 +112,11 @@ export const getAllCourses = async (req: Request, res: Response, next: NextFunct
 export const getSingleCourse = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id;
-    const course = await getCourse(courseId);
+
+    const token = req.cookies.accessToken;
+    const user = await checkToken(token);
+
+    const course = await getCourse(courseId,user?._id || "");
 
     res.status(200).json(
       new ApiResponse("course fetched successfully", course, true)
