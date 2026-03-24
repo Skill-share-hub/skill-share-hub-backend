@@ -8,5 +8,7 @@ export interface ITransaction {
   status : "completed" | "pending" | "initialized" | "rejected";
   razorpayOrderId : string
   razorpayPaymentId : string
-  createdAt : string
+  createdAt : string;
+  currency :number;
+  creditBalance : number
 }
