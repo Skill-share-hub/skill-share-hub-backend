@@ -109,7 +109,7 @@ const contentSchema = new Schema<IContent>({
   thumbnailUrl : String,
   duration : {
     type : Number,
-    default : 60
+    default : 1
   }
 },{timestamps : true});
 
