@@ -88,101 +88,88 @@ export const getTutorDashboardData = async () => {
 }
 
 export const getAdminDashboardStats = async () => {
-
-  const [
-    users,
-    courses,
-    enrollments
-  ] = await Promise.all([
-
+  const [userRes, courseRes, enrollmentRes] = await Promise.all([
     User.aggregate([
-      {$match : {role : {$ne : "admin"}}},
+      { $match: { role: { $ne: "admin" } } },
       {
-        $group : {
-          _id : null,
-          totalUsers : {$sum : 1},
-          students : {
-            $sum : {
-              $cond : [{$eq : ["$role" , "student"]},1,0]
-            }
-          },
-          tutors : {
-            $sum : {
-              $cond : [{$eq : ["$role" , "tutor"]},1,0]
-            }
-          },
-          premiumTutors : {
-            $sum : {
-              $cond : [{$eq : ["$role","premiumTutor"]},1,0]
-            }
-          }
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          students: { $sum: { $cond: [{ $eq: ["$role", "student"] }, 1, 0] } },
+          tutors: { $sum: { $cond: [{ $eq: ["$role", "tutor"] }, 1, 0] } },
+          premiumTutors: { $sum: { $cond: [{ $eq: ["$role", "premiumTutor"] }, 1, 0] } }
         }
-      },
-      {$project : { _id : 0 }}
+      }
     ]),
-
     Course.aggregate([
-      {$match : {status : "published"}},
+      { $match: { status: "published" } },
       {
-        $group : {
-          _id : null,
-          totalCourses : {$sum : 1},
-          creditCourses : {
-            $sum : {
-              $cond : [{$eq : ["$courseType" , "credit"]},1,0]
-            }
-          },
-          paidCourses : {
-            $sum : {
-              $cond : [{$eq : ["$courseType" , "paid"]},1,0]
-            }
-          }
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          credit: { $sum: { $cond: [{ $eq: ["$courseType", "credit"] }, 1, 0] } },
+          paid: { $sum: { $cond: [{ $eq: ["$courseType", "paid"] }, 1, 0] } }
         }
-      },
-      {$project : { _id : 0 }}
+      }
     ]),
-
     Enrollment.aggregate([
-        {$group : {
-          _id : null ,
-          totalEnrollments : {$sum : 1},
-          creditEnrollments : {
-            $sum : {
-              $cond : [{$eq : ["$courseSnapshot.courseType","credit"]},1,0]
-            }
-          },
-          paidEnrollments : {
-            $sum : {
-              $cond : [{$eq : ["$courseSnapshot.courseType","paid"]},1,0]
-            }
-          },
-
-          totalTimeSpend : { $sum : "$totalWatchTime" },
-          creditTimeSpend : {
-            $sum : {
-              $cond : [{$eq : ["$courseSnapshot.courseType","credit"]},"$totalWatchTime",0]
-            }
-          },
-          paidTimeSpend : {
-            $sum : {
-              $cond : [{$eq : ["$courseSnapshot.courseType","paid"]},"$totalWatchTime",0]
-            }
-          },
-        }},
-        {$project : {
-          _id : 0
-        }}
+      {
+        $group: {
+          _id: null,
+          totalEnrollments: { $sum: 1 },
+          creditEnrollments: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "credit"] }, 1, 0] } },
+          paidEnrollments: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, 1, 0] } },
+          totalTime: { $sum: "$totalWatchTime" },
+          creditTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "credit"] }, "$totalWatchTime", 0] } },
+          paidTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, "$totalWatchTime", 0] } }
+        }
+      }
     ])
-
   ]);
 
-  return {
-    users : users[0],
-    courses : courses[0],
-    enrollments : enrollments[0]
-  }
+  // Extract objects or provide defaults if no data exists
+  const u = userRes[0] || { total: 0, students: 0, tutors: 0, premiumTutors: 0 };
+  const c = courseRes[0] || { total: 0, credit: 0, paid: 0 };
+  const e = enrollmentRes[0] || { totalEnrollments: 0, creditEnrollments: 0, paidEnrollments: 0, totalTime: 0, creditTime: 0, paidTime: 0 };
 
-}
+  // Return a consistent array that frontend can .map() over
+  return [
+    {
+      title: "Users",
+      count: u.total,
+      details: [
+        { label: "Students", value: u.students },
+        { label: "Tutors", value: u.tutors },
+        { label: "Premium", value: u.premiumTutors }
+      ]
+    },
+    {
+      title: "Courses",
+      count: c.total,
+      details: [
+        { label: "Credit", value: c.credit },
+        { label: "Paid", value: c.paid }
+      ]
+    },
+    {
+      title: "Enrollments",
+      count: e.totalEnrollments,
+      details: [
+        { label: "Credit", value: e.creditEnrollments },
+        { label: "Paid", value: e.paidEnrollments }
+      ]
+    },
+    {
+      title: "Watch Time",
+      count: e.totalTime,
+      unit: "min",
+      details: [
+        { label: "Credit", value: e.creditTime },
+        { label: "Paid", value: e.paidTime }
+      ]
+    }
+  ];
+};
 
 export const getEnrollmentChart = async (groupBy:IQuery["eGroupBy"]) => {
 
@@ -335,7 +322,7 @@ export const getTopPerformingCourses = async (courseType:IQuery["tCourseType"]) 
 
 export const getRecentActivities = async (query: IQuery) => {
   const { limit = 10, type } = query;
-  const perTypeLimit = Math.ceil(limit / 4);
+  const perTypeLimit = Math.floor(limit / 4);
 
   const getEnrollments = (limit: number) =>
     Enrollment.find({ status: "active" })
