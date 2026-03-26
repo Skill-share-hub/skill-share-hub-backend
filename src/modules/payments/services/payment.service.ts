@@ -121,6 +121,8 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       userId,
       amount: costInCredits,
       method: "wallet",
+      creditBalance : user.userCreditBalance,
+      currency : course.price,
       status: "completed",
       type: "course_purchase",
       razorpayOrderId: `wallet_${Date.now()}`

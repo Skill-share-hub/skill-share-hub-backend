@@ -2,6 +2,9 @@ import { Enrollment } from "../enrollments/enrollment.model";
 import { User } from "../users/user.model";
 import { ApiError } from "../../utils/ApiError";
 import {  getCourses } from "../courses/course.service";
+import { Course } from "../courses/course.model";
+import { IQuery } from "./dashboard.validation";
+import { Transaction } from "../wallet/wallet.model";
 
 export const getStudentDashboardData = async (userId: string) => {
 
@@ -78,4 +81,355 @@ const recommendedData = await getCourses(
   watchedHours,
   completedHours
 };
+};
+
+export const getTutorDashboardData = async () => {
+  return null ;
+}
+
+export const getAdminDashboardStats = async () => {
+
+  const [
+    users,
+    courses,
+    enrollments
+  ] = await Promise.all([
+
+    User.aggregate([
+      {$match : {role : {$ne : "admin"}}},
+      {
+        $group : {
+          _id : null,
+          totalUsers : {$sum : 1},
+          students : {
+            $sum : {
+              $cond : [{$eq : ["$role" , "student"]},1,0]
+            }
+          },
+          tutors : {
+            $sum : {
+              $cond : [{$eq : ["$role" , "tutor"]},1,0]
+            }
+          },
+          premiumTutors : {
+            $sum : {
+              $cond : [{$eq : ["$role","premiumTutor"]},1,0]
+            }
+          }
+        }
+      },
+      {$project : { _id : 0 }}
+    ]),
+
+    Course.aggregate([
+      {$match : {status : "published"}},
+      {
+        $group : {
+          _id : null,
+          totalCourses : {$sum : 1},
+          creditCourses : {
+            $sum : {
+              $cond : [{$eq : ["$courseType" , "credit"]},1,0]
+            }
+          },
+          paidCourses : {
+            $sum : {
+              $cond : [{$eq : ["$courseType" , "paid"]},1,0]
+            }
+          }
+        }
+      },
+      {$project : { _id : 0 }}
+    ]),
+
+    Enrollment.aggregate([
+        {$group : {
+          _id : null ,
+          totalEnrollments : {$sum : 1},
+          creditEnrollments : {
+            $sum : {
+              $cond : [{$eq : ["$courseSnapshot.courseType","credit"]},1,0]
+            }
+          },
+          paidEnrollments : {
+            $sum : {
+              $cond : [{$eq : ["$courseSnapshot.courseType","paid"]},1,0]
+            }
+          },
+
+          totalTimeSpend : { $sum : "$totalWatchTime" },
+          creditTimeSpend : {
+            $sum : {
+              $cond : [{$eq : ["$courseSnapshot.courseType","credit"]},"$totalWatchTime",0]
+            }
+          },
+          paidTimeSpend : {
+            $sum : {
+              $cond : [{$eq : ["$courseSnapshot.courseType","paid"]},"$totalWatchTime",0]
+            }
+          },
+        }},
+        {$project : {
+          _id : 0
+        }}
+    ])
+
+  ]);
+
+  return {
+    users : users[0],
+    courses : courses[0],
+    enrollments : enrollments[0]
+  }
+
+}
+
+export const getEnrollmentChart = async (groupBy:IQuery["eGroupBy"]) => {
+
+  const now = new Date();
+  let startDate = new Date();
+  let pipeline: any[] = [];
+
+  if (groupBy === "days") {
+    startDate.setDate(now.getDate() - 6); // last 7 days
+  }
+
+  if (groupBy === "weeks") {
+    startDate.setDate(now.getDate() - 28); // last 4 weeks
+  }
+
+  if (groupBy === "months") {
+    startDate.setMonth(now.getMonth() - 11); // last 12 months
+  }
+
+  if (groupBy === "years") {
+    startDate.setFullYear(now.getFullYear() - 4); // last 5 years
+  }
+
+  pipeline.push({
+    $match: {
+      createdAt: { $gte: startDate, $lte: now }
+    }
+  });
+
+  if (groupBy === "days") {
+    pipeline.push({
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m-%d",
+            date: "$createdAt"
+          }
+        },
+        count: { $sum: 1 }
+      }
+    });
+  }
+
+  if (groupBy === "months") {
+    pipeline.push({
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y-%m",
+            date: "$createdAt"
+          }
+        },
+        count: { $sum: 1 }
+      }
+    });
+  }
+
+  if (groupBy === "years") {
+    pipeline.push({
+      $group: {
+        _id: {
+          $dateToString: {
+            format: "%Y",
+            date: "$createdAt"
+          }
+        },
+        count: { $sum: 1 }
+      }
+    });
+  }
+
+  if (groupBy === "weeks") {
+    pipeline.push({
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          week: { $isoWeek: "$createdAt" }
+        },
+        count: { $sum: 1 }
+      }
+    });
+  }
+
+  pipeline.push({
+    $sort: { _id: 1 }
+  });
+
+  const rawData = await Enrollment.aggregate(pipeline);
+
+  const formattedData = rawData.map((item) => {
+    let label = "";
+
+    if (groupBy === "weeks") {
+      label = `Week ${item._id.week}`;
+    } else {
+      label = item._id; 
+    }
+
+    return {
+      label,
+      count: item.count
+    };
+  });
+
+  return formattedData;
+  
+}
+
+export const getTopPerformingCourses = async (courseType:IQuery["tCourseType"]) => {
+
+  const query = {
+    status : "published",
+    courseType,
+  }
+
+  const courses = await Course.aggregate([
+    { $match: query },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "tutorId",
+        foreignField: "_id",
+        as: "tutor"
+      }
+    },
+
+    { $unwind: "$tutor" },
+
+    {
+      $project: {
+        _id: 0,
+        title: 1,
+        tutorName: "$tutor.name"
+      }
+    },
+
+    {
+      $sort: {
+        ratingsAverage: -1,
+        totalEnrollments: -1
+      }
+    },
+
+    { $limit: 5 }
+  ]);
+
+  return courses ;
+}
+
+export const getRecentActivities = async (query: IQuery) => {
+  const { limit = 10, type } = query;
+  const perTypeLimit = Math.ceil(limit / 4);
+
+  const getEnrollments = (limit: number) =>
+    Enrollment.find({ status: "active" })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate({ path: "userId", select: "name -_id" })
+      .populate({path : "courseId", select : "title -_id"})
+      .select("courseId userId status createdAt")
+      .lean()
+      .then(data =>
+        data.map(item => ({
+          type: "course_enrollment",
+          title: (item.courseId as any)?.title,
+          userName: (item.userId as any)?.name,
+          status: item.status,
+          createdAt: item.createdAt
+        }))
+      );
+
+  const getCourses = (limit: number) =>
+    Course.find({ status: "published" })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate({ path: "tutorId", select: "name -_id" })
+      .select("title tutorId status courseType createdAt")
+      .lean()
+      .then(data =>
+        data.map(item => ({
+          type: "course_creation",
+          title: item.title,
+          tutorName: (item.tutorId as any)?.name,
+          courseType: item.courseType,
+          createdAt: item.createdAt
+        }))
+      );
+
+  const getUsers = (limit: number) =>
+    User.find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select("name avatarUrl createdAt")
+      .lean()
+      .then(data =>
+        data.map(item => ({
+          type: "user_creation",
+          name: item.name,
+          avatar: item.avatarUrl,
+          createdAt: item.createdAt
+        }))
+      );
+
+  const getWithdrawals = (limit: number) =>
+    Transaction.find({
+      type: "credit_withdraw",
+      status: { $in: ["completed", "pending"] }
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .populate({ path: "userId", select: "name -_id" })
+      .select("amount status createdAt")
+      .lean()
+      .then(data =>
+        data.map(item => ({
+          type: "withdrawal_request",
+          amount: item.amount,
+          userName: (item.userId as any)?.name,
+          status: item.status,
+          createdAt: item.createdAt
+        }))
+      );
+
+  if (type) {
+    switch (type) {
+      case "course_enrollment":
+        return await getEnrollments(limit);
+      case "course_creation":
+        return await getCourses(limit);
+      case "user_creation":
+        return await getUsers(limit);
+      case "withdrawal_request":
+        return await getWithdrawals(limit);
+      default:
+        return [];
+    }
+  }
+
+  const [enrollments, courses, users, withdrawals] = await Promise.all([
+    getEnrollments(perTypeLimit),
+    getCourses(perTypeLimit),
+    getUsers(perTypeLimit),
+    getWithdrawals(perTypeLimit)
+  ]);
+
+  const data = [...enrollments, ...courses, ...users, ...withdrawals] ;
+
+  return data;
 };
