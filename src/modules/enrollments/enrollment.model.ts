@@ -17,6 +17,7 @@ export interface IEnrollment {
     courseType: string;
     creditCost?: number;
   };
+  createdAt : string
 }
 
 const enrollmentSchema = new Schema<IEnrollment>({
