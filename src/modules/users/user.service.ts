@@ -15,20 +15,19 @@ export const getUserProfileService = async (userId: string, role: string) => {
   const query = User.findOne({ _id: userId, role: role })
     .select(`${projection} ${roleSpecificExclusion}`);
 
-  if (role === "student") {
-    query.populate({
-      path: "enrolledCourses",
-      select: "courseId progress",
+  query.populate({
+    path: "enrolledCourses",
+    select: "courseId progress status enrolledAt courseSnapshot",
+    populate: {
+      path: "courseId",
+      select: "title thumbnailUrl tutorId",
       populate: {
-        path: "courseId",
-        select: "title thumbnailUrl tutorId",
-        populate: {
-          path: "tutorId",
-          select: "name"
-        }
+        path: "tutorId",
+        select: "name"
       }
-    });
-  }
+    }
+  });
+
   user = await query;
 
 

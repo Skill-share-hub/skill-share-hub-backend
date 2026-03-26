@@ -10,31 +10,49 @@ import { env } from "../../config/env";
 
 
 
-export const walletSummary = async (query:IQuery,userId:Types.ObjectId) => {
-  const user = await User.findById(userId);
-  if(!user)throw new ApiError(404,"User not found!");
+import { Enrollment } from "../enrollments/enrollment.model";
 
-  if(query.refresh){    
+export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, "User not found!");
+
+  if (query.refresh) {
     return {
-      creditBalance : user.userCreditBalance,
-      creditValue : user.userCreditBalance * CREDIT_VALUE,
-      creditConst : CREDIT_VALUE
+      creditBalance: user.userCreditBalance,
+      creditValue: user.userCreditBalance * CREDIT_VALUE,
+      creditConst: CREDIT_VALUE
     }
   }
 
-  const status = query.status || {$ne : "initialized"};
+  const status = query.status || { $ne: "initialized" };
 
-  const transactions = await Transaction.find({userId, status})
-  .limit(query.limit)
-  .sort({createdAt : -1});
+  const transactions = await Transaction.find({ userId, status })
+    .limit(query.limit)
+    .sort({ createdAt: -1 });
+
+  const enrollments = await Enrollment.find({ userId });
+
+  const enrichedTransactions = transactions.map((tx: any) => {
+    const match = enrollments.find(
+      (en) =>
+        Math.abs(new Date(en.createdAt).getTime() - new Date(tx.createdAt).getTime()) < 10000
+    );
+
+    return {
+      ...tx._doc,
+      courseId: match?.courseId || null,
+      courseSnapshot: match?.courseSnapshot || null
+    };
+  });
 
   return {
-    creditBalance : user.userCreditBalance,
-    creditValue : user.userCreditBalance * CREDIT_VALUE,
-    transactions,
-    creditConst : CREDIT_VALUE
+    creditBalance: user.userCreditBalance,
+    creditValue: user.userCreditBalance * CREDIT_VALUE,
+    transactions: enrichedTransactions,
+    creditConst: CREDIT_VALUE
   }
 }
+
 
 export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId) => {
 

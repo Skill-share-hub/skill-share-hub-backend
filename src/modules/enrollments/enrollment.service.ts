@@ -29,12 +29,7 @@ export const enrolledCourses = async (userId:Types.ObjectId,status:string)=> {
 export const enrollmentById = async (courseId:string,userId:Types.ObjectId)=> {
 
     const enrollment = await Enrollment.findOne({courseId,userId}).lean();
-    if(!enrollment) throw new ApiError(404,"Enrollment not found");
-
-    const user = await User.findById(userId).select("enrolledCourses");
-    if(!user?.enrolledCourses.includes(enrollment._id)){
-        throw new ApiError(403,"User is not enrolled in this course");
-    }
+    if(!enrollment) throw new ApiError(404, "Enrollment not found");
 
     const course = await Course.findById(courseId)
     .populate({

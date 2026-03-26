@@ -21,6 +21,11 @@ export const getPurchaseSummary = async (
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
 
+  const existingEnrollment = await Enrollment.findOne({ userId, courseId });
+  if (existingEnrollment) {
+    throw new ApiError(400, "You are already enrolled in this course");
+  }
+
   const coursePrice = course.price || 0;
   const userCredits = user.userCreditBalance || 0;
 
@@ -61,6 +66,11 @@ export const createRazorpayOrder = async (courseId: string, userId: string) => {
 
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found");
+
+  const existingEnrollment = await Enrollment.findOne({ userId, courseId });
+  if (existingEnrollment) {
+    throw new ApiError(400, "You are already enrolled in this course");
+  }
 
   const coursePrice = course.price || 0;
   const userCredits = user.userCreditBalance || 0;
@@ -107,6 +117,17 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
 
     const user = await User.findById(userId).session(session);
     if (!user) throw new ApiError(404, "User not found");
+
+    const existingEnrollment = await Enrollment.findOne({ userId, courseId }).session(session);
+    if (existingEnrollment) {
+      await session.commitTransaction();
+      session.endSession();
+      return {
+        success: true,
+        message: "You are already enrolled in this course",
+        alreadyEnrolled: true
+      };
+    }
 
     const costInCredits = course.courseType === "credit" && course.creditCost ? course.creditCost : Math.ceil(course.price / CREDIT_VALUE);
 
@@ -237,12 +258,18 @@ export const verifyRazorpayPayment = async (
 
     const existingEnrollment = await Enrollment.findOne({ userId, courseId }).session(session);
     if (existingEnrollment) {
-      throw new ApiError(400, "Already enrolled in this course");
+      await session.commitTransaction();
+      session.endSession();
+      return {
+        success: true,
+        message: "Already enrolled in this course",
+        alreadyEnrolled: true
+      };
     }
 
     const totalContents = course.contentModules?.length || 0;
 
-    await Enrollment.create([{
+    const enrollment = await Enrollment.create([{
       userId,
       courseId,
       status: "active",
@@ -258,10 +285,10 @@ export const verifyRazorpayPayment = async (
       }
     }], { session });
 
-    // Add course to user's enrolledCourses for fast access
+    // Add enrollment ID to user's enrolledCourses for fast access
     await User.findByIdAndUpdate(
       userId,
-      { $addToSet: { enrolledCourses: courseId } },
+      { $addToSet: { enrolledCourses: enrollment[0]._id } },
       { session }
     );
     
