@@ -66,8 +66,8 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     const updatedEnrollment = await Enrollment.findOneAndUpdate(
         { courseId, userId },
             alreadyCompleted
-            ? { $pull: { completedContent: content._id } , totalWatchTime : {$inc : -(content.duration ?? 1)} }
-            : { $push: { completedContent: content._id } , totalWatchTime : {$inc : content.duration} },
+            ? { $pull: { completedContent: content._id } , $inc : { totalWatchTime : -(content.duration ?? 1)} }
+            : { $push: { completedContent: content._id } , $inc : { totalWatchTime : content.duration} },
         {returnDocument: 'after',runValidators : true}
     );
 
