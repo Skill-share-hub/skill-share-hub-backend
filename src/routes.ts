@@ -8,6 +8,7 @@ import tutorRoutes from "./modules/tutors/tutor.routes";
 import walletRoutes from './modules/wallet/wallet.routes';
 import paymentRoutes from './modules/payments/routes/payment.routes';
 import enrollmentRoutes from './modules/enrollments/enrollments.routes'
+import premiumApplication  from './modules/premiumTutor/premiumApplication.routes';
 
 const router = Router();
 
@@ -26,5 +27,7 @@ router.use("/tutor", tutorRoutes);
 router.use('/wallet', walletRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/enrollments',enrollmentRoutes);
+router.use('/premium-application',premiumApplication);
+
 
 export default router;
