@@ -127,12 +127,10 @@ export const getAdminDashboardStats = async () => {
     ])
   ]);
 
-  // Extract objects or provide defaults if no data exists
   const u = userRes[0] || { total: 0, students: 0, tutors: 0, premiumTutors: 0 };
   const c = courseRes[0] || { total: 0, credit: 0, paid: 0 };
   const e = enrollmentRes[0] || { totalEnrollments: 0, creditEnrollments: 0, paidEnrollments: 0, totalTime: 0, creditTime: 0, paidTime: 0 };
 
-  // Return a consistent array that frontend can .map() over
   return [
     {
       title: "Users",
@@ -309,8 +307,8 @@ export const getTopPerformingCourses = async (courseType:IQuery["tCourseType"]) 
 
     {
       $sort: {
-        ratingsAverage: -1,
-        totalEnrollments: -1
+        totalEnrollments: -1,
+        ratingsAverage: -1
       }
     },
 
@@ -325,7 +323,7 @@ export const getRecentActivities = async (query: IQuery) => {
   const perTypeLimit = Math.floor(limit / 4);
 
   const getEnrollments = (limit: number) =>
-    Enrollment.find({ status: "active" })
+    Enrollment.find({ status: {$in : ["active","completed"]} })
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate({ path: "userId", select: "name -_id" })
