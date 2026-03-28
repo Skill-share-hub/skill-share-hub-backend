@@ -5,6 +5,7 @@ import {  getCourses } from "../courses/course.service";
 import { Course } from "../courses/course.model";
 import { IQuery } from "./dashboard.validation";
 import { Transaction } from "../wallet/wallet.model";
+import { CREDIT_VALUE } from "../wallet/wallet.constant";
 
 export const getStudentDashboardData = async (userId: string) => {
 
@@ -126,12 +127,36 @@ export const getAdminDashboardStats = async () => {
       }
     ]),
     Transaction.aggregate([
-      { $match: { type: "platform_commission", status: "completed" } },
+      { 
+        $match: { 
+          status: "completed",
+          $or: [
+            { type: "platform_commission" },
+            { platformCommission: { $gt: 0 } }
+          ]
+        } 
+      },
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$currency" },
-          totalCredits: { $sum: "$amount" }
+          totalRevenue: { 
+            $sum: {
+              $cond: [
+                { $eq: ["$type", "platform_commission"] },
+                "$currency",
+                { $multiply: ["$platformCommission", CREDIT_VALUE] }
+              ]
+            }
+          },
+          totalCredits: { 
+            $sum: {
+              $cond: [
+                { $eq: ["$type", "platform_commission"] },
+                "$amount",
+                "$platformCommission"
+              ]
+            }
+          }
         }
       }
     ])
@@ -453,9 +478,12 @@ export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
   const revenueOverTime = await Transaction.aggregate([
     {
       $match: {
-        type: "platform_commission",
         status: "completed",
-        createdAt: { $gte: startDate, $lte: now }
+        createdAt: { $gte: startDate, $lte: now },
+        $or: [
+          { type: "platform_commission" },
+          { platformCommission: { $gt: 0 } }
+        ]
       }
     },
     {
@@ -466,7 +494,15 @@ export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
             date: "$createdAt"
           }
         },
-        revenue: { $sum: "$currency" }
+        revenue: { 
+          $sum: {
+            $cond: [
+              { $eq: ["$type", "platform_commission"] },
+              "$currency",
+              { $multiply: ["$platformCommission", CREDIT_VALUE] }
+            ]
+          }
+        }
       }
     },
     { $sort: { _id: 1 } }
@@ -476,14 +512,25 @@ export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
   const revenuePerCourse = await Transaction.aggregate([
     {
       $match: {
-        type: "platform_commission",
-        status: "completed"
+        status: "completed",
+        $or: [
+          { type: "platform_commission" },
+          { platformCommission: { $gt: 0 } }
+        ]
       }
     },
     {
       $group: {
         _id: "$relatedId",
-        totalRevenue: { $sum: "$currency" }
+        totalRevenue: { 
+          $sum: {
+            $cond: [
+              { $eq: ["$type", "platform_commission"] },
+              "$currency",
+              { $multiply: ["$platformCommission", CREDIT_VALUE] }
+            ]
+          }
+        }
       }
     },
     {
