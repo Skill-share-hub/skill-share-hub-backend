@@ -129,7 +129,9 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       };
     }
 
-    const costInCredits = course.courseType === "credit" && course.creditCost ? course.creditCost : Math.ceil(course.price / CREDIT_VALUE);
+    const costInCredits = course.courseType === "credit" && course.creditCost 
+      ? course.creditCost 
+      : Math.ceil((course.price || 0) / CREDIT_VALUE);
 
     if (user.userCreditBalance < costInCredits) {
       throw new ApiError(400, "Insufficient credits");
@@ -138,37 +140,81 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     user.userCreditBalance -= costInCredits;
     await user.save({ session });
 
-    await Transaction.create([{
-      userId,
-      amount: costInCredits,
-      method: "wallet",
-      creditBalance : user.userCreditBalance,
-      currency : course.price,
-      status: "completed",
-      type: "course_purchase",
-      razorpayOrderId: `wallet_${Date.now()}`
-    }], { session });
-
+    // 1. Create Enrollment early to get its ID for linking
     const totalContents = course.contentModules?.length || 0;
-
     const enrollment = new Enrollment({
       userId,
       courseId,
       status: "active",
-      totalContents,      // Added: total content count initializing
-      progress: 0,        // Added: initial progress set to 0
-      // completedAt is left undefined as per requirement
+      totalContents,
+      progress: 0,
       courseSnapshot: {
         title: course.title,
-        thumbnail: course.thumbnailUrl,
-        price: course.price,
+        thumbnail: course.thumbnailUrl || "",
+        price: course.price || 0,
         courseType: course.courseType,
-        creditCost: course.creditCost
+        creditCost: course.creditCost || 0
       }
     });
     await enrollment.save({ session });
+
+    // 2. Calculate Commission and Credit the Tutor (95%)
+    const commissionCredits = Math.floor(costInCredits * 0.05);
+    const tutorCredits = costInCredits - commissionCredits;
+
+    const tutor = await User.findById(course.tutorId).session(session);
+    if (!tutor) throw new ApiError(404, "Tutor not found");
+
+    tutor.userCreditBalance = (tutor.userCreditBalance || 0) + tutorCredits;
+    if (tutor.tutorProfile) {
+      tutor.tutorProfile.totalCreditsEarned = (tutor.tutorProfile.totalCreditsEarned || 0) + tutorCredits;
+      tutor.tutorProfile.earningsTotal = (tutor.tutorProfile.earningsTotal || 0) + (tutorCredits * CREDIT_VALUE);
+    }
+    await tutor.save({ session });
+
+    // 3. Create Dual Transactions linked to enrollment
+    const razorpayOrderId = `wallet_${Date.now()}`;
     
-    // Add course to user's enrolledCourses for fast access
+    // Create student debit transaction
+    await Transaction.create([{
+      userId: new mongoose.Types.ObjectId(userId),
+      amount: costInCredits,
+      method: "wallet",
+      creditBalance: user.userCreditBalance,
+      currency: course.price || 0,
+      status: "completed",
+      type: "course_purchase",
+      razorpayOrderId,
+      relatedId: enrollment._id
+    }], { session });
+
+    // Create tutor credit transaction (95%)
+    await Transaction.create([{
+      userId: tutor._id,
+      amount: tutorCredits,
+      method: "wallet",
+      status: "completed",
+      type: "tutor_earning",
+      razorpayOrderId,
+      relatedId: enrollment._id,
+      creditBalance: tutor.userCreditBalance,
+      currency: tutorCredits * CREDIT_VALUE
+    }], { session });
+
+    // Create platform commission transaction (5%)
+    await Transaction.create([{
+      userId: new mongoose.Types.ObjectId("660000000000000000000000"), // Platform ID
+      amount: commissionCredits,
+      method: "wallet",
+      status: "completed",
+      type: "platform_commission",
+      razorpayOrderId,
+      relatedId: enrollment._id,
+      creditBalance: 0,
+      currency: commissionCredits * CREDIT_VALUE
+    }], { session });
+
+    // 4. Update User and Course
     await User.findByIdAndUpdate(
       userId,
       { $addToSet: { enrolledCourses: enrollment._id } },
@@ -185,7 +231,8 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       success: true,
       message: "Course purchased with credits"
     };
-  } catch (error) {
+  } catch (error: any) {
+    console.error("PURCHASE_WITH_CREDITS_ERROR:", error);
     await session.abortTransaction();
     session.endSession();
     throw error;
@@ -238,24 +285,6 @@ export const verifyRazorpayPayment = async (
     const course = await Course.findById(courseId).session(session);
     if (!course) throw new ApiError(404, "Course not found");
 
-    if (creditsUsed > 0) {
-      if (user.userCreditBalance < creditsUsed) {
-        throw new ApiError(400, "Insufficient credits to cover the used amount");
-      }
-      user.userCreditBalance -= creditsUsed;
-      await user.save({ session });
-
-      await Transaction.create([{
-        userId,
-        amount: creditsUsed,
-        method: "wallet",
-        status: "completed",
-        type: "course_purchase",
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id
-      }], { session });
-    }
-
     const existingEnrollment = await Enrollment.findOne({ userId, courseId }).session(session);
     if (existingEnrollment) {
       await session.commitTransaction();
@@ -267,15 +296,21 @@ export const verifyRazorpayPayment = async (
       };
     }
 
-    const totalContents = course.contentModules?.length || 0;
+    // 1. Calculate total credits and apply 5% commission
+    const cashCredits = Math.ceil((payment.amount || 0) / CREDIT_VALUE);
+    const totalCreditsForPurchase = (creditsUsed || 0) + cashCredits;
 
+    const commissionCredits = Math.floor(totalCreditsForPurchase * 0.05);
+    const tutorCredits = totalCreditsForPurchase - commissionCredits;
+
+    // 2. Create Enrollment early to get ID
+    const totalContents = course.contentModules?.length || 0;
     const enrollment = await Enrollment.create([{
       userId,
       courseId,
       status: "active",
-      totalContents,      // Added: total content count initializing 
-      progress: 0,        // Added: initial progress set to 0
-      // completedAt is left undefined as per requirement
+      totalContents,
+      progress: 0,
       courseSnapshot: {
         title: course.title,
         thumbnail: course.thumbnailUrl,
@@ -284,6 +319,72 @@ export const verifyRazorpayPayment = async (
         creditCost: course.creditCost
       }
     }], { session });
+
+    const enrollmentId = enrollment[0]._id;
+
+    // 3. Handle Student Credit Deduction (if any used)
+    if (creditsUsed > 0) {
+      if (user.userCreditBalance < creditsUsed) {
+        throw new ApiError(400, "Insufficient credits to cover the used amount");
+      }
+      user.userCreditBalance -= creditsUsed;
+      await user.save({ session });
+
+      // Student Debit Transaction (Credits portion)
+      await Transaction.create([{
+        userId,
+        amount: creditsUsed,
+        method: "wallet",
+        status: "completed",
+        type: "course_purchase",
+        razorpayOrderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+        relatedId: enrollmentId,
+        creditBalance: user.userCreditBalance,
+        currency: 0 // Credits portion
+      }], { session });
+    }
+
+    // 4. Credit the Tutor (95% of total credits)
+    const tutor = await User.findById(course.tutorId).session(session);
+    if (!tutor) throw new ApiError(404, "Tutor not found");
+
+    tutor.userCreditBalance = (tutor.userCreditBalance || 0) + tutorCredits;
+    if (tutor.tutorProfile) {
+      tutor.tutorProfile.totalCreditsEarned = (tutor.tutorProfile.totalCreditsEarned || 0) + tutorCredits;
+      tutor.tutorProfile.earningsTotal = (tutor.tutorProfile.earningsTotal || 0) + (tutorCredits * CREDIT_VALUE);
+    }
+    await tutor.save({ session });
+
+    // Tutor Credit Transaction (95%)
+    await Transaction.create([{
+      userId: tutor._id,
+      amount: tutorCredits,
+      method: "wallet",
+      status: "completed",
+      type: "tutor_earning",
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id || "",
+      relatedId: enrollmentId,
+      creditBalance: tutor.userCreditBalance,
+      currency: tutorCredits * CREDIT_VALUE
+    }], { session });
+
+    // Platform Commission Transaction (5%)
+    await Transaction.create([{
+      userId: new mongoose.Types.ObjectId("660000000000000000000000"), // Platform ID
+      amount: commissionCredits,
+      method: "wallet",
+      status: "completed",
+      type: "platform_commission",
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id || "",
+      relatedId: enrollmentId,
+      creditBalance: 0,
+      currency: commissionCredits * CREDIT_VALUE
+    }], { session });
+
+    // 5. Update User and Course
 
     // Add enrollment ID to user's enrolledCourses for fast access
     await User.findByIdAndUpdate(
