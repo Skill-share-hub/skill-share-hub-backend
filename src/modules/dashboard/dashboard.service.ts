@@ -88,7 +88,7 @@ export const getTutorDashboardData = async () => {
 }
 
 export const getAdminDashboardStats = async () => {
-  const [userRes, courseRes, enrollmentRes] = await Promise.all([
+  const [userRes, courseRes, enrollmentRes, revenueRes] = await Promise.all([
     User.aggregate([
       { $match: { role: { $ne: "admin" } } },
       {
@@ -124,12 +124,24 @@ export const getAdminDashboardStats = async () => {
           paidTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, "$totalWatchTime", 0] } }
         }
       }
+    ]),
+    Transaction.aggregate([
+      { $match: { type: "platform_commission", status: "completed" } },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$currency" },
+          totalCredits: { $sum: "$amount" }
+        }
+      }
     ])
   ]);
 
   const u = userRes[0] || { total: 0, students: 0, tutors: 0, premiumTutors: 0 };
   const c = courseRes[0] || { total: 0, credit: 0, paid: 0 };
   const e = enrollmentRes[0] || { totalEnrollments: 0, creditEnrollments: 0, paidEnrollments: 0, totalTime: 0, creditTime: 0, paidTime: 0 };
+  const r = revenueRes[0] || { totalRevenue: 0, totalCredits: 0 };
+
 
   return [
     {
@@ -164,6 +176,14 @@ export const getAdminDashboardStats = async () => {
       details: [
         { label: "Credit", value: e.creditTime },
         { label: "Paid", value: e.paidTime }
+      ]
+    },
+    {
+      title: "Revenue",
+      count: r.totalRevenue,
+      unit: "INR",
+      details: [
+        { label: "Platform Credits", value: r.totalCredits }
       ]
     }
   ];
@@ -417,4 +437,92 @@ export const getRecentActivities = async (query: IQuery) => {
   const data = [...enrollments, ...courses, ...users, ...withdrawals] ;
 
   return data;
+};
+
+export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
+  const now = new Date();
+  let startDate = new Date();
+  let pipeline: any[] = [];
+
+  if (groupBy === "days") startDate.setDate(now.getDate() - 6);
+  if (groupBy === "weeks") startDate.setDate(now.getDate() - 28);
+  if (groupBy === "months") startDate.setMonth(now.getMonth() - 11);
+  if (groupBy === "years") startDate.setFullYear(now.getFullYear() - 4);
+
+  // Over Time
+  const revenueOverTime = await Transaction.aggregate([
+    {
+      $match: {
+        type: "platform_commission",
+        status: "completed",
+        createdAt: { $gte: startDate, $lte: now }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: groupBy === "days" ? "%Y-%m-%d" : groupBy === "months" ? "%Y-%m" : "%Y",
+            date: "$createdAt"
+          }
+        },
+        revenue: { $sum: "$currency" }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]);
+
+  // Per Course
+  const revenuePerCourse = await Transaction.aggregate([
+    {
+      $match: {
+        type: "platform_commission",
+        status: "completed"
+      }
+    },
+    {
+      $group: {
+        _id: "$relatedId",
+        totalRevenue: { $sum: "$currency" }
+      }
+    },
+    {
+      $lookup: {
+        from: "enrollments",
+        localField: "_id",
+        foreignField: "_id",
+        as: "enrollment"
+      }
+    },
+    { $unwind: "$enrollment" },
+    {
+      $group: {
+        _id: "$enrollment.courseId",
+        revenue: { $sum: "$totalRevenue" }
+      }
+    },
+    {
+      $lookup: {
+        from: "courses",
+        localField: "_id",
+        foreignField: "_id",
+        as: "course"
+      }
+    },
+    { $unwind: "$course" },
+    {
+      $project: {
+        _id: 0,
+        courseTitle: "$course.title",
+        revenue: 1
+      }
+    },
+    { $sort: { revenue: -1 } },
+    { $limit: 10 }
+  ]);
+
+  return {
+    revenueOverTime,
+    revenuePerCourse
+  };
 };
