@@ -44,7 +44,7 @@ export const uploadApplicationFiles = multer({
   storage: multerS3({
     s3,
     bucket: env.awsBucket,
-    contentType: multerS3.AUTO_CONTENT_TYPE,
+    contentType: multerS3.AUTO_CONTENT_TYPE, 
     key: (req, file, cb) => {
       const folder = file.fieldname === "profilePhoto" ? "profiles" : "documents";
       const fileName = `${folder}/${randomUUID()}-${file.originalname}`;

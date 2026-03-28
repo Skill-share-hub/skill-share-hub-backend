@@ -94,6 +94,15 @@ export const getAllApplications = async (req: Request, res: Response) => {
   }
 };
 
+export const getApplicationStats = async (_req: Request, res: Response) => {
+  try {
+    const stats = await PremiumApplicationService.getApplicationStats();
+    res.status(200).json({ success: true, data: stats });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+};
+
 export const getApplicationById = async (req: Request, res: Response) => {
   try {
     const application = await PremiumApplicationService.getApplicationById(

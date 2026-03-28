@@ -146,6 +146,17 @@ export const getAllApplications = async (query: GetAllApplicationsQuery) => {
   };
 };
 
+export const getApplicationStats = async () => {
+  const [total, pending, approved, rejected] = await Promise.all([
+    PremiumApplication.countDocuments(),
+    PremiumApplication.countDocuments({ status: "pending" }),
+    PremiumApplication.countDocuments({ status: "approved" }),
+    PremiumApplication.countDocuments({ status: "rejected" }),
+  ]);
+
+  return { total, pending, approved, rejected };
+};
+
 export const getApplicationById = async (id: string) => {
   
   const application = await PremiumApplication.findById(id)

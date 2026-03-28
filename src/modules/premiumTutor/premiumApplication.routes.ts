@@ -21,8 +21,9 @@ router.put("/:id/resubmit", PremiumApplicationController.resubmitApplication);
 // ─────────────────────────────────────────────
 // Admin routes
 // ─────────────────────────────────────────────
-authorizeRoles("admin")
+router.use("/admin", authorizeRoles("admin"));
 router.get("/admin/all",PremiumApplicationController.getAllApplications);
+router.get("/admin/stats",PremiumApplicationController.getApplicationStats);
 router.get("/admin/:id", validateObjectId("id"),PremiumApplicationController.getApplicationById);
 router.patch("/admin/:id/approve", validateObjectId("id"),PremiumApplicationController.approveApplication);
 router.patch("/admin/:id/reject", validateObjectId("id"),PremiumApplicationController.rejectApplication);
