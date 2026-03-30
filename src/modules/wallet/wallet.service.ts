@@ -7,9 +7,6 @@ import { Transaction } from "./wallet.model";
 import { razorpay } from "../../config/razorpay";
 import crypto from 'crypto'
 import { env } from "../../config/env";
-
-
-
 import { Enrollment } from "../enrollments/enrollment.model";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {

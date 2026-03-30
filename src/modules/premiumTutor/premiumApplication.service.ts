@@ -3,6 +3,7 @@ import { ApiError } from "../../utils/ApiError";
 import { deleteFromS3 } from "../../utils/deleteFromS3";
 import { PremiumApplication } from "./premiumApplication.model";
 import { GetAllApplicationsQuery, SubmitApplicationInput } from "./premiumApplication.types";
+import { User } from "../users/user.model";
 
 export const submitApplication = async (data: SubmitApplicationInput) => {
   // Block if a pending/approved application already exists
@@ -168,7 +169,10 @@ export const getApplicationById = async (id: string) => {
 };
 
 export const approveApplication = async (adminId: string, applicationId: string) => {
-  const application = await PremiumApplication.findById(applicationId);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try{
+  const application = await PremiumApplication.findById(applicationId).session(session);
 
   if (!application) throw new ApiError(404, "Application not found.");
   if (application.status === "approved") throw new ApiError(400, "Application already approved.");
@@ -178,8 +182,18 @@ export const approveApplication = async (adminId: string, applicationId: string)
   application.reviewedBy = new mongoose.Types.ObjectId(adminId);
   application.reviewedAt = new Date();
 
-  await application.save();
+  await application.save({session});
+  await User.findByIdAndUpdate(application.tutorId, { role: "premiumTutor" }, { session, new: true });
+  await session.commitTransaction();
   return application;
+  }
+  catch(error){
+    await session.abortTransaction();
+    throw error;
+  }
+  finally{
+    await session.endSession();
+  }
 };
 
 export const rejectApplication = async (

@@ -5,6 +5,7 @@ import {  getCourses } from "../courses/course.service";
 import { Course } from "../courses/course.model";
 import { IQuery } from "./dashboard.validation";
 import { Transaction } from "../wallet/wallet.model";
+import { Types } from "mongoose";
 import { CREDIT_VALUE } from "../wallet/wallet.constant";
 
 export const getStudentDashboardData = async (userId: string) => {
@@ -84,9 +85,46 @@ const recommendedData = await getCourses(
 };
 };
 
-export const getTutorDashboardData = async () => {
-  return null ;
-}
+export const getTutorDashboardData = async (userId: string) => {
+  const tutorCourses = await Course.find({ tutorId: userId });
+  const totalCourses = tutorCourses.length;
+
+  const courseIds = tutorCourses.map(c => c._id);
+  const totalEnrollments = await Enrollment.countDocuments({ courseId: { $in: courseIds } });
+
+  // Calculate average rating across all courses
+  const totalRatingPoints = tutorCourses.reduce((sum, course) => sum + (course.ratingsAverage || 0), 0);
+  const avgRating = totalCourses > 0 ? Number((totalRatingPoints / totalCourses).toFixed(1)) : 0;
+
+  const revenueResult = await Transaction.aggregate([
+    {
+      $match: {
+        userId: new Types.ObjectId(userId),
+        type: "tutor_earning",
+        status: "completed"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+  
+  const isPremiumTutorEligible = avgRating >= 3.5 && totalEnrollments >= 20 && totalCourses >= 5 && totalRevenue >= 1000;
+
+  return {
+    totalCourses,
+    totalEnrollments,
+    totalRevenue,
+    avgRating,
+    isPremiumTutorEligible
+  };
+};
 
 export const getAdminDashboardStats = async () => {
   const [userRes, courseRes, enrollmentRes] = await Promise.all([
