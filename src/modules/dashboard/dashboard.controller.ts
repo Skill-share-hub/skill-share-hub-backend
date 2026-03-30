@@ -20,8 +20,8 @@ export const getStudentDashboard = async (req: Request, res: Response) => {
 
 export const getTutorDashboard = async(req:Request,res:Response) => {
  try {
-    const userId=req.user._id
-   const data= await getTutorDashboardData()
+    const userId = req.user._id;
+    const data = await getTutorDashboardData(userId);
     res.json(data)
     } catch (error) {
     res.status(500).json({
