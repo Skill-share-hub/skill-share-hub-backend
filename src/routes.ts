@@ -8,6 +8,7 @@ import tutorRoutes from "./modules/tutors/tutor.routes";
 import walletRoutes from './modules/wallet/wallet.routes';
 import paymentRoutes from './modules/payments/routes/payment.routes';
 import enrollmentRoutes from './modules/enrollments/enrollments.routes'
+import adminRoutes from './modules/admin/admin.routes';
 
 const router = Router();
 
@@ -26,5 +27,5 @@ router.use("/tutor", tutorRoutes);
 router.use('/wallet', walletRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/enrollments',enrollmentRoutes);
-
+router.use('/admin', adminRoutes);
 export default router;
