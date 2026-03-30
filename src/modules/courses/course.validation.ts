@@ -30,7 +30,7 @@ const baseSchema = z.object({
   .string()
   .min(5,"Minimum of 5 characters!")
   .max(100,"Maximum of 100 characters!"),
-
+  isDeleted: z.boolean().default(false),
   description : z
   .string()
   .min(5,"Minimum of 5 characters!")
@@ -68,7 +68,7 @@ const baseSchema = z.object({
   .default(0),
 
   status : z
-  .enum(["pending","published","draft"]),
+  .enum(["pending","published","draft","blocked"]),
 
   thumbnailUrl : z.string().optional(),
   courseLevel : z
@@ -111,7 +111,7 @@ export const CourseSchema = baseSchema.extend({
 export const UpdateCourseSchema = baseSchema.partial()
 
 export const UpdateStatusSchema = z.object({
-  status : z.enum(["pending","published","draft"])
+  status : z.enum(["pending","published","draft","blocked"])
 });
 
 export const QuerySchema = z.object({

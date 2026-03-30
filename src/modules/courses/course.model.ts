@@ -76,7 +76,7 @@ const courseSchema = new Schema<ICourse>({
   status : {
     type : String,
     required : true,
-    enum : ["pending","published","draft"]
+    enum : ["pending","published","draft","blocked"]
   },
   thumbnailUrl : {
     type : String,

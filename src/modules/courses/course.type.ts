@@ -17,6 +17,7 @@ export type QueryType = {
     $lte : number
   },
   ratingsAverage : {$gte :number}
+  
 }
 
 export type SortType = {

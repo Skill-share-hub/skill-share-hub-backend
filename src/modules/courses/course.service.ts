@@ -104,7 +104,10 @@ export const changeStatus = async (status: statusType, id: string, tutorId: stri
 
 export const getCourses = async (query: TQuery, userId: Types.ObjectId | string) => {
 
-  const queryObj:Partial<QueryType> = {status : "published"}
+  const queryObj: Partial<QueryType> = {}
+if (!userId) {
+  queryObj.status = "published";
+}
   let sortObj:SortType = {}
   
   const {limit,page} = query ;
@@ -209,9 +212,27 @@ export const getCourses = async (query: TQuery, userId: Types.ObjectId | string)
 
 }
 
-export const getCourse = async (courseId:string,userId:Types.ObjectId | string) => {
+export const getCourse = async (
+  courseId: string,
+  userId: Types.ObjectId | string,
+  role?: string
+) => {
 
-  const user = await User.findById(userId).select("enrolledCourses")
+  // ✅ ADMIN → allow full access
+  if (role === "admin") {
+    return await Course.findById(courseId)
+      .populate({
+        path: "tutorId",
+        select: "_id name avatarUrl email tutorProfile"
+      })
+      .populate({
+        path: "contentModules",
+        select: "-contentUrl"
+      })
+      .lean();
+  }
+
+  const user = await User.findById(userId).select("enrolledCourses");
 
   const course = await Course.findOne({
     $and: [
@@ -219,21 +240,22 @@ export const getCourse = async (courseId:string,userId:Types.ObjectId | string) 
       { _id: { $nin: user?.enrolledCourses } }
     ]
   })
-  .populate({
-    path : "tutorId",
-    select : "_id name avatarUrl email tutorProfile"
-  })
-  .populate({
-    path: "contentModules",
-    select: "-contentUrl"
-  })
-  .lean();
+    .populate({
+      path: "tutorId",
+      select: "_id name avatarUrl email tutorProfile"
+    })
+    .populate({
+      path: "contentModules",
+      select: "-contentUrl"
+    })
+    .lean();
 
   if (!course) {
     throw new ApiError(404, "Course not found!");
   }
+
   return course;
-}
+};
 
 export const removeCourse = async (courseId: string, userId: Types.ObjectId) => {
 
