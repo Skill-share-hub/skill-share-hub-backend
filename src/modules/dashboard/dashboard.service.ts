@@ -89,7 +89,7 @@ export const getTutorDashboardData = async () => {
 }
 
 export const getAdminDashboardStats = async () => {
-  const [userRes, courseRes, enrollmentRes, revenueRes] = await Promise.all([
+  const [userRes, courseRes, enrollmentRes] = await Promise.all([
     User.aggregate([
       { $match: { role: { $ne: "admin" } } },
       {
@@ -125,47 +125,12 @@ export const getAdminDashboardStats = async () => {
           paidTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, "$totalWatchTime", 0] } }
         }
       }
-    ]),
-    Transaction.aggregate([
-      { 
-        $match: { 
-          status: "completed",
-          $or: [
-            { type: "platform_commission" },
-            { platformCommission: { $gt: 0 } }
-          ]
-        } 
-      },
-      {
-        $group: {
-          _id: null,
-          totalRevenue: { 
-            $sum: {
-              $cond: [
-                { $eq: ["$type", "platform_commission"] },
-                "$currency",
-                { $multiply: ["$platformCommission", CREDIT_VALUE] }
-              ]
-            }
-          },
-          totalCredits: { 
-            $sum: {
-              $cond: [
-                { $eq: ["$type", "platform_commission"] },
-                "$amount",
-                "$platformCommission"
-              ]
-            }
-          }
-        }
-      }
     ])
   ]);
 
   const u = userRes[0] || { total: 0, students: 0, tutors: 0, premiumTutors: 0 };
   const c = courseRes[0] || { total: 0, credit: 0, paid: 0 };
   const e = enrollmentRes[0] || { totalEnrollments: 0, creditEnrollments: 0, paidEnrollments: 0, totalTime: 0, creditTime: 0, paidTime: 0 };
-  const r = revenueRes[0] || { totalRevenue: 0, totalCredits: 0 };
 
 
   return [
@@ -201,14 +166,6 @@ export const getAdminDashboardStats = async () => {
       details: [
         { label: "Credit", value: e.creditTime },
         { label: "Paid", value: e.paidTime }
-      ]
-    },
-    {
-      title: "Revenue",
-      count: r.totalRevenue,
-      unit: "INR",
-      details: [
-        { label: "Platform Credits", value: r.totalCredits }
       ]
     }
   ];
@@ -573,3 +530,31 @@ export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
     revenuePerCourse
   };
 };
+
+export const getPlatformEarnings = async () => {
+  const transaction = await Transaction.aggregate([
+    {$match : {
+      type : {$in: ["credit_withdraw", "credit_purchase", "course_purchase"] },
+      status : "completed"
+    }},
+    {$group : {
+      _id : null,
+      totalEarnings : {$sum : "$platformCommission"},
+      withdrawalEarnings : { $sum: { $cond: [{ $eq: ["$type", "credit_withdraw"] }, "$platformCommission", 0] } },
+      feeEarnings : { $sum: { $cond: [{ $eq: ["$type", "credit_purchase"] }, "$platformCommission", 0] } },
+      enrollmentEarnings : { $sum: { $cond: [{ $eq: ["$type", "course_purchase"] }, "$platformCommission", 0] } },
+    }},
+    {
+      $project : {
+        _id : 0
+      }
+    }
+  ]);
+
+  return transaction[0] || {
+    totalEarnings: 0,
+    withdrawalEarnings: 0,
+    feeEarnings: 0,
+    enrollmentEarnings: 0
+  };
+}

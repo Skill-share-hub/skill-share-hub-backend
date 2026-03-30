@@ -9,6 +9,7 @@ import { razorpayService } from "./razorpay.service";
 import crypto from "crypto";
 import { env } from "../../../config/env";
 import mongoose from "mongoose";
+import { COURSE_ENROLLMENT_COMMISSION } from "../const/payments.content";
 
 export const getPurchaseSummary = async (
   courseId: string,
@@ -159,7 +160,7 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     await enrollment.save({ session });
 
     // 2. Calculate Commission and Credit the Tutor (95%)
-    const commissionCredits = Math.floor(costInCredits * 0.05);
+    const commissionCredits = Math.floor(costInCredits * COURSE_ENROLLMENT_COMMISSION);
     const tutorCredits = costInCredits - commissionCredits;
 
     const tutor = await User.findById(course.tutorId).session(session);
@@ -322,7 +323,7 @@ export const verifyRazorpayPayment = async (
       relatedId: enrollmentId,
       creditBalance: user.userCreditBalance,
       currency: 0, // Credits portion
-      platformCommission: commissionCredits // Store commission here
+      platformCommission: commissionCredits * CREDIT_VALUE // Store commission here
     }], { session });
 
     if (creditsUsed > 0) {

@@ -1,0 +1,1 @@
+export const COURSE_ENROLLMENT_COMMISSION = 0.05
