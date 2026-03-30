@@ -50,6 +50,11 @@ const transactionSchema = new Schema<ITransaction>({
     type : String,
     required : true
   },
+  
+  platformCommission: {
+    type : Number,
+    default : 0
+  },
 
   razorpayPaymentId: String
 

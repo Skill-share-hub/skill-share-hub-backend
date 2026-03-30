@@ -11,5 +11,6 @@ export interface ITransaction {
   relatedId? : Types.ObjectId;
   createdAt? : Date;
   currency :number;
-  creditBalance : number
+  creditBalance : number;
+  platformCommission?: number;
 }

@@ -172,7 +172,7 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     }
     await tutor.save({ session });
 
-    // 3. Create Dual Transactions linked to enrollment
+    // 3. Create Transactions linked to enrollment
     const razorpayOrderId = `wallet_${Date.now()}`;
     
     // Create student debit transaction
@@ -185,7 +185,8 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       status: "completed",
       type: "course_purchase",
       razorpayOrderId,
-      relatedId: enrollment._id
+      relatedId: enrollment._id,
+      platformCommission: commissionCredits // Store commission here
     }], { session });
 
     // Create tutor credit transaction (95%)
@@ -199,19 +200,6 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       relatedId: enrollment._id,
       creditBalance: tutor.userCreditBalance,
       currency: tutorCredits * CREDIT_VALUE
-    }], { session });
-
-    // Create platform commission transaction (5%)
-    await Transaction.create([{
-      userId: new mongoose.Types.ObjectId("660000000000000000000000"), // Platform ID
-      amount: commissionCredits,
-      method: "wallet",
-      status: "completed",
-      type: "platform_commission",
-      razorpayOrderId,
-      relatedId: enrollment._id,
-      creditBalance: 0,
-      currency: commissionCredits * CREDIT_VALUE
     }], { session });
 
     // 4. Update User and Course
@@ -322,27 +310,27 @@ export const verifyRazorpayPayment = async (
 
     const enrollmentId = enrollment[0]._id;
 
-    // 3. Handle Student Credit Deduction (if any used)
+    // 3. Create Student Transaction (Required even if 0 credits used for commission storage)
+    await Transaction.create([{
+      userId,
+      amount: creditsUsed,
+      method: "wallet",
+      status: "completed",
+      type: "course_purchase",
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      relatedId: enrollmentId,
+      creditBalance: user.userCreditBalance,
+      currency: 0, // Credits portion
+      platformCommission: commissionCredits // Store commission here
+    }], { session });
+
     if (creditsUsed > 0) {
       if (user.userCreditBalance < creditsUsed) {
         throw new ApiError(400, "Insufficient credits to cover the used amount");
       }
       user.userCreditBalance -= creditsUsed;
       await user.save({ session });
-
-      // Student Debit Transaction (Credits portion)
-      await Transaction.create([{
-        userId,
-        amount: creditsUsed,
-        method: "wallet",
-        status: "completed",
-        type: "course_purchase",
-        razorpayOrderId: razorpay_order_id,
-        razorpayPaymentId: razorpay_payment_id,
-        relatedId: enrollmentId,
-        creditBalance: user.userCreditBalance,
-        currency: 0 // Credits portion
-      }], { session });
     }
 
     // 4. Credit the Tutor (95% of total credits)
@@ -368,20 +356,6 @@ export const verifyRazorpayPayment = async (
       relatedId: enrollmentId,
       creditBalance: tutor.userCreditBalance,
       currency: tutorCredits * CREDIT_VALUE
-    }], { session });
-
-    // Platform Commission Transaction (5%)
-    await Transaction.create([{
-      userId: new mongoose.Types.ObjectId("660000000000000000000000"), // Platform ID
-      amount: commissionCredits,
-      method: "wallet",
-      status: "completed",
-      type: "platform_commission",
-      razorpayOrderId: razorpay_order_id,
-      razorpayPaymentId: razorpay_payment_id || "",
-      relatedId: enrollmentId,
-      creditBalance: 0,
-      currency: commissionCredits * CREDIT_VALUE
     }], { session });
 
     // 5. Update User and Course
