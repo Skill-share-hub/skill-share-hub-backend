@@ -7,6 +7,7 @@ import { ApiError } from "../../utils/ApiError";
 import { checkToken } from "../../utils/checkToken";
 import { MulterFiles } from "./course.type";
 import { COURSE_CATEGORIES } from "./course.constants";
+import { Course } from "./course.model";
 
 
 export const getCourseCategories = async (
@@ -236,3 +237,25 @@ export const deleteContent = async (req:Request, res:Response, next:NextFunction
     next(error)
   }
 }
+
+// blocked feature
+
+export const toggleBlockCourse = async (req:Request, res:Response) => {
+  const { id } = req.params;
+
+  const course = await Course.findById(id);
+
+  if (!course) {
+    return res.status(404).json({ message: "Course not found" });
+  }
+
+  course.status =
+    course.status === "blocked" ? "published" : "blocked";
+
+  await course.save();
+
+  res.json({
+    success: true,
+    status: course.status,
+  });
+};

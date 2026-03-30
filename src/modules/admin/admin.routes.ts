@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { getAllTutors } from "./admin.controller";
 import { authenticate } from "../../middlewares/auth.middleware";
+import { getAllCourses } from "../courses/course.controller";
 const adminRoutes= Router();
-
-adminRoutes.get("/tutors",authenticate ,getAllTutors);
+adminRoutes.get("/Users",authenticate ,getAllTutors);
+adminRoutes.get(  "/courses",  authenticate, getAllCourses);
 // router.get("/tutors/:id/profile", authenticate, getTutorProfile);
 // router.get("/tutors/:id/courses", authenticate, getTutorCourses);
 // router.get("/tutors/:id/analytics", authenticate, getTutorAnalytics);
