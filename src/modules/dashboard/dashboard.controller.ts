@@ -18,17 +18,15 @@ export const getStudentDashboard = async (req: Request, res: Response) => {
   }
 };
 
-export const getTutorDashboard = async(req:Request,res:Response) => {
- try {
+export const getTutorDashboard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
     const userId = req.user._id;
     const data = await getTutorDashboardData(userId);
-    res.json(data)
-    } catch (error) {
-    res.status(500).json({
-      message: "Failed to fetch dashboard"
-    });
+    res.status(200).json(new ApiResponse("Tutor dashboard fetched successfully", data));
+  } catch (error) {
+    next(error);
   }
-}
+};
 
 export const getAdminDashboard = async (req:Request , res:Response , next:NextFunction) => {
   try{

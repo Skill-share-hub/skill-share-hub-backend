@@ -11,21 +11,41 @@ import { Enrollment } from "../enrollments/enrollment.model";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
   const user = await User.findById(userId);
-  if (!user) throw new ApiError(404, "User not found!");
-
+  if (!user) throw new ApiError(404, "User not found!"); 
+  const isTutor = user.role === "tutor" || user.role === "premiumTutor";
   if (query.refresh) {
+    if(isTutor){
+       return {
+      creditBalance: user?.tutorProfile?.totalCreditsEarned ?? 0,
+      creditValue: (user?.tutorProfile?.totalCreditsEarned ?? 0) * CREDIT_VALUE,
+      creditConst: CREDIT_VALUE
+    }
+    }
     return {
       creditBalance: user.userCreditBalance,
       creditValue: user.userCreditBalance * CREDIT_VALUE,
       creditConst: CREDIT_VALUE
     }
   }
+  
+  // --- Logic for Full History ---
 
-  const status = query.status || { $ne: "initialized" };
+   const transactionQuery: any = { userId };
+    if (query.status) {
+    transactionQuery.status = query.status;
+  } else {
+    transactionQuery.status = { $ne: "initialized" };
+  }
+   if (isTutor) {
+    // If Tutor: Show only earnings from teaching and withdrawals
+    transactionQuery.type = { $in: ["tutor_earning", "credit_withdraw"] };
+  } 
 
-  const transactions = await Transaction.find({ userId, status })
-    .limit(query.limit)
+  // Else (Student/Admin): Show all history (purchases, spending, AND any earnings)
+  const transactions = await Transaction.find(transactionQuery)
+    .limit(query.limit || 10)
     .sort({ createdAt: -1 });
+
 
   const enrollments = await Enrollment.find({ userId });
 
@@ -41,10 +61,13 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
       courseSnapshot: match?.courseSnapshot || null
     };
   });
+  const finalBalance = isTutor 
+    ? (user?.tutorProfile?.totalCreditsEarned ?? 0) 
+    : user.userCreditBalance;
 
   return {
-    creditBalance: user.userCreditBalance,
-    creditValue: user.userCreditBalance * CREDIT_VALUE,
+    creditBalance: finalBalance,
+    creditValue: finalBalance * CREDIT_VALUE,
     transactions: enrichedTransactions,
     creditConst: CREDIT_VALUE
   }
