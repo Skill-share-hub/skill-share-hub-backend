@@ -36,6 +36,10 @@ export const createCreditOrder = async (req:Request, res:Response, next:NextFunc
     const { amount } = req.body ;
     if(!amount || amount < 0)throw new ApiError(400,"Enter a valid amount!");
 
+    if (['tutor', 'premiumTutor'].includes(req.user?.role)) {
+      throw new ApiError(403, "Tutors are not allowed to purchase credits directly.");
+    }
+
     const order:any = await razorpayCreditOrder(amount,req.user?._id);
 
     res.status(201).json(

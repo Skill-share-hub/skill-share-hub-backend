@@ -5,6 +5,8 @@ import {  getCourses } from "../courses/course.service";
 import { Course } from "../courses/course.model";
 import { IQuery } from "./dashboard.validation";
 import { Transaction } from "../wallet/wallet.model";
+import { Types } from "mongoose";
+import { CREDIT_VALUE } from "../wallet/wallet.constant";
 
 export const getStudentDashboardData = async (userId: string) => {
 
@@ -83,9 +85,46 @@ const recommendedData = await getCourses(
 };
 };
 
-export const getTutorDashboardData = async () => {
-  return null ;
-}
+export const getTutorDashboardData = async (userId: string) => {
+  const tutorCourses = await Course.find({ tutorId: userId });
+  const totalCourses = tutorCourses.length;
+
+  const courseIds = tutorCourses.map(c => c._id);
+  const totalEnrollments = await Enrollment.countDocuments({ courseId: { $in: courseIds } });
+
+  // Calculate average rating across all courses
+  const totalRatingPoints = tutorCourses.reduce((sum, course) => sum + (course.ratingsAverage || 0), 0);
+  const avgRating = totalCourses > 0 ? Number((totalRatingPoints / totalCourses).toFixed(1)) : 0;
+
+  const revenueResult = await Transaction.aggregate([
+    {
+      $match: {
+        userId: new Types.ObjectId(userId),
+        type: "tutor_earning",
+        status: "completed"
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$amount" }
+      }
+    }
+  ]);
+
+  const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
+
+  
+  const isPremiumTutorEligible = avgRating >= 3.5 && totalEnrollments >= 20 && totalCourses >= 5 && totalRevenue >= 1000;
+
+  return {
+    totalCourses,
+    totalEnrollments,
+    totalRevenue,
+    avgRating,
+    isPremiumTutorEligible
+  };
+};
 
 export const getAdminDashboardStats = async () => {
   const [userRes, courseRes, enrollmentRes] = await Promise.all([
@@ -127,12 +166,11 @@ export const getAdminDashboardStats = async () => {
     ])
   ]);
 
-  // Extract objects or provide defaults if no data exists
   const u = userRes[0] || { total: 0, students: 0, tutors: 0, premiumTutors: 0 };
   const c = courseRes[0] || { total: 0, credit: 0, paid: 0 };
   const e = enrollmentRes[0] || { totalEnrollments: 0, creditEnrollments: 0, paidEnrollments: 0, totalTime: 0, creditTime: 0, paidTime: 0 };
 
-  // Return a consistent array that frontend can .map() over
+
   return [
     {
       title: "Users",
@@ -309,8 +347,8 @@ export const getTopPerformingCourses = async (courseType:IQuery["tCourseType"]) 
 
     {
       $sort: {
-        ratingsAverage: -1,
-        totalEnrollments: -1
+        totalEnrollments: -1,
+        ratingsAverage: -1
       }
     },
 
@@ -325,7 +363,7 @@ export const getRecentActivities = async (query: IQuery) => {
   const perTypeLimit = Math.floor(limit / 4);
 
   const getEnrollments = (limit: number) =>
-    Enrollment.find({ status: "active" })
+    Enrollment.find({ status: {$in : ["active","completed"]} })
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate({ path: "userId", select: "name -_id" })
@@ -420,3 +458,141 @@ export const getRecentActivities = async (query: IQuery) => {
 
   return data;
 };
+
+export const getPlatformRevenueStats = async (groupBy: IQuery["eGroupBy"]) => {
+  const now = new Date();
+  let startDate = new Date();
+  let pipeline: any[] = [];
+
+  if (groupBy === "days") startDate.setDate(now.getDate() - 6);
+  if (groupBy === "weeks") startDate.setDate(now.getDate() - 28);
+  if (groupBy === "months") startDate.setMonth(now.getMonth() - 11);
+  if (groupBy === "years") startDate.setFullYear(now.getFullYear() - 4);
+
+  // Over Time
+  const revenueOverTime = await Transaction.aggregate([
+    {
+      $match: {
+        status: "completed",
+        createdAt: { $gte: startDate, $lte: now },
+        $or: [
+          { type: "platform_commission" },
+          { platformCommission: { $gt: 0 } }
+        ]
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: groupBy === "days" ? "%Y-%m-%d" : groupBy === "months" ? "%Y-%m" : "%Y",
+            date: "$createdAt"
+          }
+        },
+        revenue: { 
+          $sum: {
+            $cond: [
+              { $eq: ["$type", "platform_commission"] },
+              "$currency",
+              { $multiply: ["$platformCommission", CREDIT_VALUE] }
+            ]
+          }
+        }
+      }
+    },
+    { $sort: { _id: 1 } }
+  ]);
+
+  // Per Course
+  const revenuePerCourse = await Transaction.aggregate([
+    {
+      $match: {
+        status: "completed",
+        $or: [
+          { type: "platform_commission" },
+          { platformCommission: { $gt: 0 } }
+        ]
+      }
+    },
+    {
+      $group: {
+        _id: "$relatedId",
+        totalRevenue: { 
+          $sum: {
+            $cond: [
+              { $eq: ["$type", "platform_commission"] },
+              "$currency",
+              { $multiply: ["$platformCommission", CREDIT_VALUE] }
+            ]
+          }
+        }
+      }
+    },
+    {
+      $lookup: {
+        from: "enrollments",
+        localField: "_id",
+        foreignField: "_id",
+        as: "enrollment"
+      }
+    },
+    { $unwind: "$enrollment" },
+    {
+      $group: {
+        _id: "$enrollment.courseId",
+        revenue: { $sum: "$totalRevenue" }
+      }
+    },
+    {
+      $lookup: {
+        from: "courses",
+        localField: "_id",
+        foreignField: "_id",
+        as: "course"
+      }
+    },
+    { $unwind: "$course" },
+    {
+      $project: {
+        _id: 0,
+        courseTitle: "$course.title",
+        revenue: 1
+      }
+    },
+    { $sort: { revenue: -1 } },
+    { $limit: 10 }
+  ]);
+
+  return {
+    revenueOverTime,
+    revenuePerCourse
+  };
+};
+
+export const getPlatformEarnings = async () => {
+  const transaction = await Transaction.aggregate([
+    {$match : {
+      type : {$in: ["credit_withdraw", "credit_purchase", "course_purchase"] },
+      status : "completed"
+    }},
+    {$group : {
+      _id : null,
+      totalEarnings : {$sum : "$platformCommission"},
+      withdrawalEarnings : { $sum: { $cond: [{ $eq: ["$type", "credit_withdraw"] }, "$platformCommission", 0] } },
+      feeEarnings : { $sum: { $cond: [{ $eq: ["$type", "credit_purchase"] }, "$platformCommission", 0] } },
+      enrollmentEarnings : { $sum: { $cond: [{ $eq: ["$type", "course_purchase"] }, "$platformCommission", 0] } },
+    }},
+    {
+      $project : {
+        _id : 0
+      }
+    }
+  ]);
+
+  return transaction[0] || {
+    totalEarnings: 0,
+    withdrawalEarnings: 0,
+    feeEarnings: 0,
+    enrollmentEarnings: 0
+  };
+}

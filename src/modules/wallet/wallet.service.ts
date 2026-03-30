@@ -1,15 +1,12 @@
 import { Types } from "mongoose"
 import { User } from "../users/user.model"
 import { ApiError } from "../../utils/ApiError";
-import { CREDIT_VALUE } from "./wallet.constant";
+import { CREDIT_PURCHASE_COMMISSION, CREDIT_VALUE } from "./wallet.constant";
 import { IQuery } from "./wallet.validation";
 import { Transaction } from "./wallet.model";
 import { razorpay } from "../../config/razorpay";
 import crypto from 'crypto'
 import { env } from "../../config/env";
-
-
-
 import { Enrollment } from "../enrollments/enrollment.model";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
@@ -56,27 +53,31 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
 
 export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId) => {
 
-    const amount = credits * CREDIT_VALUE ;
+    const realMoney = credits * CREDIT_VALUE ;
 
     const options = {
-      amount: amount * 100,
+      amount: realMoney * 100,
       currency: "INR",
       receipt: "receipt_" + Date.now()
     }
 
     const order = await razorpay.orders.create(options);
     const user = await User.findById(userId).select("userCreditBalance").lean();
-    if(!user)throw new ApiError(404,"User not found!")
+    if(!user)throw new ApiError(404,"User not found!");
+
+    const platformCommission = Math.round(credits * CREDIT_PURCHASE_COMMISSION);
+    const creditsAfterCommission = credits - platformCommission
 
     await Transaction.create({
       userId,
-      amount : credits,
+      amount : creditsAfterCommission,
       method : "razor_pay",
       razorpayOrderId : order.id,
       status : "initialized",
       type : "credit_purchase",
       creditBalance : user.userCreditBalance  ,
-      currency : amount
+      currency : realMoney,
+      platformCommission : platformCommission * CREDIT_VALUE
     });
 
     return order ;
@@ -99,18 +100,16 @@ export const verifyPayment = async (payload:any, userId:Types.ObjectId) => {
 
   if (expectedSignature === razorpay_signature){
 
-    const transaction = await Transaction.findOneAndUpdate(
-      
-      {razorpayOrderId : razorpay_order_id, userId},
-      {
-        razorpayPaymentId : razorpay_payment_id,
-        status : "completed"
-      },
-      {runValidators : true , returnDocument: 'after'}
-
-    );
-
+    const transaction = await Transaction.findOne({razorpayOrderId : razorpay_order_id, userId});
     if(!transaction)throw new ApiError(404,"payment verified transaction failed!");
+
+    const payment = await razorpay.payments.fetch(razorpay_payment_id);
+    if (payment.amount !== transaction.currency * 100) throw new ApiError(403, "Amount mismatch!");
+
+    transaction.razorpayPaymentId = razorpay_payment_id ;
+    transaction.status = "completed" ;
+
+    await transaction.save();
 
     const user = await User.findOneAndUpdate(
       {_id : userId},

@@ -36,3 +36,29 @@ export const upload = multer({
   }
 
 });
+
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+
+export const uploadApplicationFiles = multer({
+  storage: multerS3({
+    s3,
+    bucket: env.awsBucket,
+    contentType: multerS3.AUTO_CONTENT_TYPE, 
+    key: (req, file, cb) => {
+      const folder = file.fieldname === "profilePhoto" ? "profiles" : "documents";
+      const fileName = `${folder}/${randomUUID()}-${file.originalname}`;
+      cb(null, fileName);
+    },
+  }),
+  limits: { fileSize: 1024 * 1024 * 5 }, // 5MB — docs don't need 1GB
+  fileFilter: (req, file, cb) => {
+    if (!ALLOWED_TYPES.includes(file.mimetype)) {
+      return cb(new Error("Only JPG, PNG and PDF files are allowed."));
+    }
+    cb(null, true);
+  },
+}).fields([
+  { name: "profilePhoto", maxCount: 1 },
+  { name: "documents", maxCount: 5 },
+]);

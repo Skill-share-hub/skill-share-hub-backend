@@ -1,5 +1,5 @@
 import { NextFunction, Request,Response } from "express"
-import { getStudentDashboardData, getAdminDashboardStats , getTutorDashboardData, getEnrollmentChart , getTopPerformingCourses , getRecentActivities } from "./dashboard.service"
+import { getStudentDashboardData, getAdminDashboardStats , getTutorDashboardData, getEnrollmentChart , getTopPerformingCourses , getRecentActivities , getPlatformEarnings } from "./dashboard.service"
 import { QuerySchema } from "./dashboard.validation";
 import { ApiError } from "../../utils/ApiError";
 import { ApiResponse } from "../../utils/ApiResponse";
@@ -20,8 +20,8 @@ export const getStudentDashboard = async (req: Request, res: Response) => {
 
 export const getTutorDashboard = async(req:Request,res:Response) => {
  try {
-    const userId=req.user._id
-   const data= await getTutorDashboardData()
+    const userId = req.user._id;
+    const data = await getTutorDashboardData(userId);
     res.json(data)
     } catch (error) {
     res.status(500).json({
@@ -53,12 +53,15 @@ export const getAdminDashboard = async (req:Request , res:Response , next:NextFu
 
     const recentActivity = await getRecentActivities(result.data);
 
+    const earnings = await getPlatformEarnings();
+
     res.status(200).json(
       new ApiResponse("Dashboard data fetch successfull!",{
         stats,
         enrollmentChart,
         topCourses,
-        recentActivity
+        recentActivity,
+        earnings
       })
     )
 
