@@ -1,0 +1,78 @@
+import { Types } from "mongoose";
+import { askAi } from "../../services/askai.service";
+import { ApiError } from "../../utils/ApiError";
+import { Content } from "../courses/course.model";
+import { Message } from "./chatbot.model";
+import { MessagePayload, MessagesType } from "./chatbot.types";
+
+export const askAiService = async (payload:MessagePayload) => {
+
+  const content = await Content.findById(payload.contentId).lean();
+  if(!content)throw new ApiError(404,"no messages found");
+
+  const chats = await Message
+  .findOne({userId : payload.userId, contentId : payload.contentId})
+
+  if(!chats)throw new ApiError(404,"no messages found");
+
+  chats?.messages.push({role : "user",content : payload.question});
+  await chats.save();
+
+  let response:any = {}
+
+  try{
+    response = await askAi(chats.messages,"mistralai/mistral-small-3.1-24b-instruct");
+  }catch(error){
+    response = await askAi(chats.messages,"meta-llama/llama-3.1-8b-instruct");
+  }
+
+  const aiRes = {role : "assistant" , content : response.content}
+
+  chats.messages.push(aiRes);
+  await chats.save();
+
+  return aiRes ;
+  
+}
+
+export const getChatService = async (userId:Types.ObjectId,contentId:Types.ObjectId ) => {
+
+  const content = await Content.findOne(contentId).lean();
+  if(!content)throw new ApiError(404,"No content found!");
+
+  const chat = await Message.findOne({userId,contentId}).lean();
+
+  if(!chat){
+    const systemPrompt = `
+      You are a friendly AI tutor welcoming a student.
+
+      Context:
+      Title: ${content.title}
+      Summary: ${content.summary}
+
+      Instructions:
+      - Greet the user warmly
+      - Introduce the course in a simple and engaging way
+      - Briefly explain what they will learn
+      - Keep it short (3-5 lines)
+      - Sound natural and friendly (not robotic)
+      - Do NOT answer questions, just give a welcome message
+    `;
+    const messages:MessagesType[] = [{role : "system" , content : systemPrompt}]
+
+    const response = await askAi(messages,"mistralai/mistral-small-3.1-24b-instruct");
+
+    const chatbot = await Message.create({
+      userId,
+      contentId,
+      messages : [
+        ...messages,
+        {role : "assistant" , content : response.content}
+      ],
+    });
+
+    return chatbot.messages ;
+  }
+
+  return chat.messages ;
+}
