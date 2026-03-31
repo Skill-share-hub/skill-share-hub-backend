@@ -1,6 +1,8 @@
 import { ApiError } from "../../utils/ApiError";
 import { Course } from "../courses/course.model";
 import { User } from "../users/user.model";
+import { Enrollment } from "../enrollments/enrollment.model";
+import { Types } from "mongoose";
 
 export const getAllTutorsService = async (query: any) => {
   const { search, status, isPremium,role, page = 1, limit = 10 } = query;
@@ -69,6 +71,178 @@ export const getAllTutorsService = async (query: any) => {
   };
 };
 
+export const getAllEnrollmentsService = async (query: any) => {
+  const { search, status, page = 1, limit = 10 } = query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const pipeline: any[] = [];
+
+  // Initial Match for status
+  if (status && status !== "all") {
+    pipeline.push({ $match: { status } });
+  }
+
+  // Lookup Student
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "student"
+    }
+  });
+  pipeline.push({ $unwind: { path: "$student", preserveNullAndEmptyArrays: true } });
+
+  // Lookup Course to get tutorId
+  pipeline.push({
+    $lookup: {
+      from: "courses",
+      localField: "courseId",
+      foreignField: "_id",
+      as: "course"
+    }
+  });
+  pipeline.push({ $unwind: { path: "$course", preserveNullAndEmptyArrays: true } });
+
+  // Lookup Tutor
+  pipeline.push({
+    $lookup: {
+      from: "users",
+      localField: "course.tutorId",
+      foreignField: "_id",
+      as: "tutor"
+    }
+  });
+  pipeline.push({ $unwind: { path: "$tutor", preserveNullAndEmptyArrays: true } });
+
+  // Search Filter
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { "student.name": { $regex: search, $options: "i" } },
+          { "courseSnapshot.title": { $regex: search, $options: "i" } }
+        ]
+      }
+    });
+  }
+
+  // Final Projection
+  pipeline.push({
+    $project: {
+      _id: 1,
+      student: {
+        _id: { $ifNull: ["$student._id", null] },
+        name: { $ifNull: ["$student.name", "Unknown User"] },
+        email: { $ifNull: ["$student.email", ""] }
+      },
+      course: {
+        _id: "$courseId",
+        title: "$courseSnapshot.title",
+        thumbnail: "$courseSnapshot.thumbnail",
+        price: "$courseSnapshot.price",
+        creditCost: "$courseSnapshot.creditCost",
+        courseType: "$courseSnapshot.courseType"
+      },
+      tutor: {
+        _id: { $ifNull: ["$tutor._id", null] },
+        name: { $ifNull: ["$tutor.name", "Unknown Tutor"] }
+      },
+      status: 1,
+      progress: 1,
+      enrolledAt: 1
+    }
+  });
+
+  // Sort by enrollment date
+  pipeline.push({ $sort: { enrolledAt: -1 } });
+
+  // Pagination with $facet
+  pipeline.push({
+    $facet: {
+      metadata: [{ $count: "total" }],
+      data: [{ $skip: skip }, { $limit: Number(limit) }]
+    }
+  });
+
+  const [result] = await Enrollment.aggregate(pipeline);
+  const totalCount = result.metadata[0]?.total || 0;
+  const enrollments = result.data;
+
+  return {
+    enrollments,
+    totalCount,
+    page: Number(page),
+    limit: Number(limit),
+    totalPages: Math.ceil(totalCount / Number(limit))
+  };
+};
+
+export const getEnrollmentByIdService = async (id: string) => {
+  const pipeline: any[] = [
+    { $match: { _id: new Types.ObjectId(id) } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "student"
+      }
+    },
+    { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "courses",
+        localField: "courseId",
+        foreignField: "_id",
+        as: "courseInfo"
+      }
+    },
+    { $unwind: { path: "$courseInfo", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "courseInfo.tutorId",
+        foreignField: "_id",
+        as: "tutor"
+      }
+    },
+    { $unwind: { path: "$tutor", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 1,
+        student: {
+          _id: "$student._id",
+          name: { $ifNull: ["$student.name", "Unknown User"] },
+          email: { $ifNull: ["$student.email", ""] }
+        },
+        course: {
+          _id: "$courseId",
+          title: "$courseSnapshot.title",
+          thumbnail: "$courseSnapshot.thumbnail",
+          price: "$courseSnapshot.price",
+          creditCost: "$courseSnapshot.creditCost",
+          courseType: "$courseSnapshot.courseType"
+        },
+        tutor: {
+          _id: "$tutor._id",
+          name: { $ifNull: ["$tutor.name", "Unknown Tutor"] }
+        },
+        status: 1,
+        progress: 1,
+        totalContents: 1,
+        completedContent: 1,
+        enrolledAt: 1
+      }
+    }
+  ];
+
+  const [enrollment] = await Enrollment.aggregate(pipeline);
+  if (!enrollment) throw new ApiError(404, "Enrollment not found");
+
+  return enrollment;
+};
+
 //profile
 export const getTutorProfileService = async (id: string) => {
   const tutor = await User.findById(id).lean();
@@ -135,4 +309,4 @@ export const getTutorAnalyticsService = async (id: string) => {
     avgRating: Number(avgRating.toFixed(1)),
     totalEarnings
   };
-};
+};
