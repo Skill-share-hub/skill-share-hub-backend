@@ -51,5 +51,9 @@ const enrollmentSchema = new Schema<IEnrollment>({
 
 // Prevent duplicate enrollments
 enrollmentSchema.index({ userId: 1, courseId: 1 }, { unique: true });
+enrollmentSchema.index({ userId: 1 });
+enrollmentSchema.index({ courseId: 1 });
+enrollmentSchema.index({ status: 1 });
+enrollmentSchema.index({ enrolledAt: -1 });
 
 export const Enrollment = model<IEnrollment>("Enrollment", enrollmentSchema);
