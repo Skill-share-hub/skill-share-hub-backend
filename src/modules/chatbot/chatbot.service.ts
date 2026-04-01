@@ -50,13 +50,12 @@ export const getChatService = async (userId:Types.ObjectId,contentId:Types.Objec
       Title: ${content.title}
       Summary: ${content.summary}
 
-      Instructions:
       - Greet the user warmly
       - Introduce the course in a simple and engaging way
       - Briefly explain what they will learn
       - Keep it short (3-5 lines)
       - Sound natural and friendly (not robotic)
-      - Do NOT answer questions, just give a welcome message
+      - Keep formatting simple
     `;
     const messages:MessagesType[] = [{role : "system" , content : systemPrompt}]
 
@@ -66,7 +65,6 @@ export const getChatService = async (userId:Types.ObjectId,contentId:Types.Objec
       userId,
       contentId,
       messages : [
-        ...messages,
         {role : "assistant" , content : response.content}
       ],
     });

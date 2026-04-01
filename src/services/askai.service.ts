@@ -9,7 +9,14 @@ export const askAi = async (messages:MessagesType[] , model = "mistralai/mistral
       "https://openrouter.ai/api/v1/chat/completions",
       {
         model,
-        messages,
+        messages : [
+          ...messages ,
+          {
+            role : "system" ,
+            content : `Instructions:
+            - Do NOT use markdown (no ####, **, lists)`
+          }
+        ],
       },
       {
         headers: {
