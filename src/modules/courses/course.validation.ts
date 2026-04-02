@@ -86,9 +86,14 @@ export const CourseSchema = baseSchema.extend({
 
   ratingsAverage : z
   .number()
-  .min(1.0,"Rating Needs to be 1.0 atleast")
+  .min(0,"Rating Needs to be 0 at least")
   .max(5.0,"Rating Needs to be 5.0 atmost!")
-  .optional(),
+  .default(0),
+
+  ratingsCount : z
+  .number()
+  .nonnegative("Should be Positive")
+  .default(0),
 
   totalEnrollments : z
   .number()
