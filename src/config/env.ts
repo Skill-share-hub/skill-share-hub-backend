@@ -46,4 +46,6 @@ export const env = {
   razorpayKeyId : getEnv("RAZORPAY_KEY_ID"),
   razorpayKeySecret : getEnv("RAZORPAY_KEY_SECRET"),
   brevoApiKey: getEnv("BREVO_API_KEY"),
+
+  openRouteApiKey : getEnv("OPENROUTER_API_KEY"),
 };
