@@ -11,22 +11,16 @@ import { removeCourse } from './course.service';
 
 const router = Router();
 
+// STATIC ROUTES
 router.get('/', getAllCourses);
 
 router.get('/tutor',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor","student"),
+  authorizeRoles("tutor", "premiumTutor", "student"),
   getTutorCourses
 );
+
 router.get("/categories", getCourseCategories);
-
-router.get('/:id', getSingleCourse);
-
-router.get('/tutor',
-  authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
-  getTutorCourses
-);
 
 router.post('/',
   authenticate,
@@ -36,6 +30,61 @@ router.post('/',
   createCourse
 );
 
+// REVIEW ROUTES
+router.post('/review',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.createReview
+);
+
+router.get('/my-review/:id',
+  authenticate,
+  ReviewController.getUserReview
+);
+
+router.put('/review/:id',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.updateReview
+);
+
+router.delete('/review/:id',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.deleteReview
+);
+
+// DYNAMIC ROUTES
+router.get('/:id/reviews',
+  ReviewController.getCourseReviews
+);
+
+router.get('/:id', getSingleCourse);
+
+router.put('/:id',
+  authenticate,
+  authorizeRoles("tutor", "premiumTutor"),
+  upload.single("thumbnailUrl"),
+  validate(UpdateCourseSchema),
+  updateCourse
+);
+
+router.patch('/:id',
+  authenticate,
+  authorizeRoles("tutor", "premiumTutor"),
+  validate(UpdateStatusSchema),
+  changeCourseStatus
+);
+
+router.delete('/:id',
+  authenticate,
+  authorizeRoles("tutor", "premiumTutor"),
+  deleteCourse
+);
+
+router.patch("/:id/block", toggleBlockCourse);
+
+// CONTENT ROUTES
 router.post('/:id/content',
   authenticate,
   authorizeRoles("tutor", "premiumTutor"),
@@ -64,55 +113,5 @@ router.delete('/:courseId/content/:contentId',
   deleteContent
 );
 
-router.put('/:id',
-  authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
-  upload.single("thumbnailUrl"),
-  validate(UpdateCourseSchema),
-  updateCourse
-);
-
-router.patch('/:id',
-  authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
-  validate(UpdateStatusSchema),
-  changeCourseStatus
-);
-
-router.delete('/:id',
-  authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
-  deleteCourse
-);
-router.patch("/:id/block", toggleBlockCourse);
-
-// Review routes
-router.post('/review',
-  authenticate,
-  authorizeRoles("student"),
-  ReviewController.createReview
-);
-
-router.get('/:id/reviews',
-  ReviewController.getCourseReviews
-);
-
-router.get('/my-review/:id',
-  authenticate,
-  ReviewController.getUserReview
-);
-
-router.put('/review/:id',
-  authenticate,
-  authorizeRoles("student"),
-  ReviewController.updateReview
-);
-
-router.delete('/review/:id',
-  authenticate,
-  authorizeRoles("student"),
-  ReviewController.deleteReview
-);
-
-export default router ;
+export default router;
 
