@@ -71,7 +71,12 @@ const courseSchema = new Schema<ICourse>({
   ratingsAverage : {
     type : Number,
     required : true,
-    default : 2.0
+    default : 0
+  },
+  ratingsCount : {
+    type : Number,
+    required : true,
+    default : 0
   },
   status : {
     type : String,
