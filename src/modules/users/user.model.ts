@@ -11,7 +11,7 @@ export interface IUser {
   role: UserRole;
   isVerified: boolean;
   isProfileCompleted: boolean;
-
+  isBlocked: boolean;
   provider: "local" | "google";
   googleId?: string;
 
@@ -81,6 +81,10 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    isBlocked: {
+  type: Boolean,
+  default: false
+},
 
     // Auth
     provider: {
@@ -88,7 +92,7 @@ const userSchema = new Schema<IUser>(
       enum: ["local", "google"],
       default: "local",
     },
-
+    
     googleId: {
       type: String,
     },
@@ -101,7 +105,7 @@ const userSchema = new Schema<IUser>(
         default: [],
       },
     ],
-
+    
     enrolledCourses: [
       {
         type: Schema.Types.ObjectId,

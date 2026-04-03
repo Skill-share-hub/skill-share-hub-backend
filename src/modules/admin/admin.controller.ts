@@ -1,4 +1,6 @@
-import { getAllTutorsService, getAllEnrollmentsService, getEnrollmentByIdService } from "./admin.service";
+import { User } from "../users/user.model";
+import { Request, Response } from "express";
+import { getAllTutorsService, getAllEnrollmentsService, getEnrollmentByIdService,toggleBlockUserService } from "./admin.service";
 
 export const getAllTutors = async (req: any, res: any, next: any) => {
   try {
@@ -16,6 +18,26 @@ export const getAllTutors = async (req: any, res: any, next: any) => {
     next(error);
   }
 };
+export const toggleBlockUser = async (req: Request, res: Response) => {
+const id = req.params.id as string;
+  const user = await toggleBlockUserService(id);
+
+  res.status(200).json({
+    success: true,
+    message: user.isBlocked ? "User banned" : "User unbanned",
+    data: user
+  });
+};
+
+export const getUserDetails = async (req: Request, res: Response) => {
+  const id = req.params.id as string;
+
+  const data = await getUserDetailsService(id);
+
+  res.json({
+    success: true,
+    data
+  });
 
 export const getAllEnrollments = async (req: any, res: any, next: any) => {
   try {
