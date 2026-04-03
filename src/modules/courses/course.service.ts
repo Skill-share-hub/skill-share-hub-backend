@@ -309,7 +309,7 @@ export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
 
 export const makeContent = async (input: Required<IContent>, courseId: string) => {
 
-  const { contentUrl, duration, summary, thumbnailUrl, title } = input;
+  const { contentUrl, duration, summary, thumbnailUrl, title , quizData } = input;
 
   const course = await Course.findById(courseId).lean();
   if (!course) throw new ApiError(404, "No course found!");
@@ -320,7 +320,8 @@ export const makeContent = async (input: Required<IContent>, courseId: string) =
     duration,
     summary,
     thumbnailUrl,
-    title
+    title,
+    quizData
   });
 
   await Course.updateOne({ _id: courseId }, 
@@ -335,7 +336,7 @@ export const makeContent = async (input: Required<IContent>, courseId: string) =
 }
 
 export const editContent = async (input:Required<IContent>, contentId:string) => {
-  const {contentUrl,duration,summary,thumbnailUrl,title} = input ;
+  const {contentUrl,duration,summary,thumbnailUrl,title , quizData} = input ;
 
   const content = await Content.findOneAndUpdate(
     {_id : contentId},
@@ -344,7 +345,8 @@ export const editContent = async (input:Required<IContent>, contentId:string) =>
       duration,
       summary,
       thumbnailUrl,
-      title
+      title,
+      quizData
     },
     {returnDocument: "after", runValidators:true}
   );

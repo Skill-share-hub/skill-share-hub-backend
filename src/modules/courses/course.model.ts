@@ -115,7 +115,15 @@ const contentSchema = new Schema<IContent>({
   duration : {
     type : Number,
     default : 1
-  }
+  },
+
+  quizData : [
+    {
+      question : String,
+      options : [String],
+      answer : String
+    }
+  ]
 },{timestamps : true});
 
 export const Content = model<IContent>("Content",contentSchema);

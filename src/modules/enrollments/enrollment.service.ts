@@ -126,11 +126,15 @@ export const makeQuizService = async (contentId : string , userId:string) => {
     try{
         response = await askAi([{role : "system",content : prompt }],"mistralai/mistral-small-3.1-24b-instruct");
     }catch(error){
-        response = await askAi([{role : "system",content : prompt }],"meta-llama/llama-3.1-8b-instruct");
+        try{
+            response = await askAi([{role : "system",content : prompt }],"meta-llama/llama-3.1-8b-instruct");
+        }catch(err){
+            return content?.quizData || [] ;
+        }
     }
 
     const quizData = JSON.parse(response.content);
 
-    return quizData ;
+    return [...quizData,...(content?.quizData || [])] ;
 
 }
