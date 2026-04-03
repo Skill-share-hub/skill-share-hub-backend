@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { checkToken } from "../utils/checkToken";
+import { ApiError } from "../utils/ApiError";
 
 interface JwtPayload {
   userId: string;
@@ -36,6 +37,9 @@ export const authenticate = async (
       role: user.role,
       isVerified: user.isVerified,
     };
+    if (user.isBlocked) {
+  throw new ApiError(403, "Account is banned");
+}
 
     next();
   } catch (error: any) {

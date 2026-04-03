@@ -81,7 +81,9 @@ export const loginUser = async (input: LoginInput): Promise<RegisterResponse> =>
   if (!user || user.passwordHash === undefined) {
     throw new ApiError(401, 'Invalid email or password');
   }
-
+if (user.isBlocked) {
+  throw new ApiError(403, "Your account has been banned");
+}
   const isPasswordValid = await comparePassword(input.password, user.passwordHash);
 
   if (!isPasswordValid) {
