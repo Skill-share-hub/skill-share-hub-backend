@@ -115,7 +115,8 @@ export const getTutorDashboardData = async (userId: string) => {
   const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
 
   
-  const isPremiumTutorEligible = avgRating >= 3.5 && totalEnrollments >= 20 && totalCourses >= 5 && totalRevenue >= 1000;
+    const isPremiumTutorEligible = avgRating >= 1 && totalEnrollments >= 2 && totalCourses >= 1 && totalRevenue >= 100;
+
 
   return {
     totalCourses,

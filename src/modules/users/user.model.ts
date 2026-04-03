@@ -45,7 +45,7 @@ export interface IUser {
 
   userCreditBalance: number;
 
-  userWatchHours : number ;
+  userWatchHours: number;
 
   createdAt: Date;
   updatedAt: Date;

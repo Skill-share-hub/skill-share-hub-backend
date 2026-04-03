@@ -1,6 +1,6 @@
 import { User } from "../users/user.model";
-import { getAllTutorsService,  getUserDetailsService,  toggleBlockUserService } from "./admin.service";
 import { Request, Response } from "express";
+import { getAllTutorsService, getAllEnrollmentsService, getEnrollmentByIdService,toggleBlockUserService } from "./admin.service";
 
 export const getAllTutors = async (req: any, res: any, next: any) => {
   try {
@@ -38,4 +38,29 @@ export const getUserDetails = async (req: Request, res: Response) => {
     success: true,
     data
   });
+
+export const getAllEnrollments = async (req: any, res: any, next: any) => {
+  try {
+    const query = req.query;
+    const result = await getAllEnrollmentsService(query);
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEnrollmentById = async (req: any, res: any, next: any) => {
+  try {
+    const { id } = req.params;
+    const result = await getEnrollmentByIdService(id);
+    return res.status(200).json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
 };

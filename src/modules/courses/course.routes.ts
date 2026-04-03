@@ -5,6 +5,7 @@ import { validate } from '../../middlewares/validate.middleware';
 
 import { ContentSchema, CourseSchema, UpdateCourseSchema, UpdateStatusSchema } from './course.validation';
 import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getCourseCategories, toggleBlockCourse } from './course.controller';
+import { ReviewController } from '../reviews/review.controller';
 import { upload } from '../../utils/multer';
 import { removeCourse } from './course.service';
 
@@ -83,7 +84,35 @@ router.delete('/:id',
   authorizeRoles("tutor", "premiumTutor"),
   deleteCourse
 );
-router.delete('/:id', removeCourse);
 router.patch("/:id/block", toggleBlockCourse);
+
+// Review routes
+router.post('/review',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.createReview
+);
+
+router.get('/:id/reviews',
+  ReviewController.getCourseReviews
+);
+
+router.get('/my-review/:id',
+  authenticate,
+  ReviewController.getUserReview
+);
+
+router.put('/review/:id',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.updateReview
+);
+
+router.delete('/review/:id',
+  authenticate,
+  authorizeRoles("student"),
+  ReviewController.deleteReview
+);
+
 export default router ;
 

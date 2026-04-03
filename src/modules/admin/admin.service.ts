@@ -2,12 +2,13 @@ import { ApiError } from "../../utils/ApiError";
 import { Course } from "../courses/course.model";
 import { Enrollment } from "../enrollments/enrollment.model";
 import { User } from "../users/user.model";
+import { Types } from "mongoose";
 
+// ================= GET USERS =================
 export const getAllTutorsService = async (query: any) => {
   const { search, status, isPremium, role, page = 1, limit = 10 } = query;
 
   const skip = (Number(page) - 1) * Number(limit);
-
   const pipeline: any[] = [];
 
   //  Atlas Search
@@ -38,32 +39,28 @@ export const getAllTutorsService = async (query: any) => {
     });
   }
 
-  //  Filters
+  // Filters
   pipeline.push({
     $match: {
-      role: { $ne: "admin" }, 
+      role: { $ne: "admin" },
 
       ...(role === "tutor" && {
         $or: [
           { role: "tutor" },
           { role: "premiumTutor" },
-          { tutorProfile: { $exists: true } } 
+          { tutorProfile: { $exists: true } }
         ]
       }),
 
-      ...(role === "student" && {
-        role: "student"
-      }),
-
-      ...(role === "premiumTutor" && {
-        role: "premiumTutor"
-      }),
+      ...(role === "student" && { role: "student" }),
+      ...(role === "premiumTutor" && { role: "premiumTutor" }),
 
       ...(status && { status }),
 
-      ...(isPremium !== undefined && isPremium !== "" && {
-        isPremium: isPremium === "true"
-      })
+      ...(isPremium !== undefined &&
+        isPremium !== "" && {
+          isPremium: isPremium === "true"
+        })
     }
   });
 
@@ -71,10 +68,7 @@ export const getAllTutorsService = async (query: any) => {
   const countResult = await User.aggregate(countPipeline);
   const totalCount = countResult[0]?.total || 0;
 
-  pipeline.push(
-    { $skip: skip },
-    { $limit: Number(limit) }
-  );
+  pipeline.push({ $skip: skip }, { $limit: Number(limit) });
 
   const tutors = await User.aggregate(pipeline);
 
@@ -87,126 +81,137 @@ export const getAllTutorsService = async (query: any) => {
   };
 };
 
-// ---------------- PROFILE ----------------
-export const getTutorProfileService = async (id: string) => {
-  const tutor = await User.findById(id).lean();
+// ================= ENROLLMENTS =================
+export const getAllEnrollmentsService = async (query: any) => {
+  const { search, status, page = 1, limit = 10 } = query;
+  const skip = (Number(page) - 1) * Number(limit);
 
-  if (!tutor) throw new ApiError(404, "Tutor not found");
+  const pipeline: any[] = [];
 
-  return tutor;
-};
-
-// ---------------- COURSES ----------------
-export const getTutorCoursesService = async (id: string) => {
-  const courses = await Course.find({ tutorId: id }).lean();
-  return courses;
-};
-
-// ---------------- ANALYTICS ----------------
-export const getTutorAnalyticsService = async (id: string) => {
-  const courses = await Course.find({ tutorId: id });
-
-  if (!courses || courses.length === 0) {
-    return {
-      totalCourses: 0,
-      totalEnrollments: 0,
-      totalHours: 0,
-      avgRating: 0,
-      totalEarnings: 0
-    };
+  if (status && status !== "all") {
+    pipeline.push({ $match: { status } });
   }
 
-  const totalCourses = courses.length;
+  pipeline.push(
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "student"
+      }
+    },
+    { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
 
-  const totalEnrollments = courses.reduce(
-    (acc, c) => acc + (c.totalEnrollments || 0),
-    0
+    {
+      $lookup: {
+        from: "courses",
+        localField: "courseId",
+        foreignField: "_id",
+        as: "course"
+      }
+    },
+    { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "course.tutorId",
+        foreignField: "_id",
+        as: "tutor"
+      }
+    },
+    { $unwind: { path: "$tutor", preserveNullAndEmptyArrays: true } }
   );
 
-  const totalHours = courses.reduce(
-    (acc, c) => acc + (c.courseDuration || 0),
-    0
+  if (search) {
+    pipeline.push({
+      $match: {
+        $or: [
+          { "student.name": { $regex: search, $options: "i" } },
+          { "courseSnapshot.title": { $regex: search, $options: "i" } }
+        ]
+      }
+    });
+  }
+
+  pipeline.push(
+    {
+      $project: {
+        _id: 1,
+        student: {
+          _id: "$student._id",
+          name: { $ifNull: ["$student.name", "Unknown User"] },
+          email: "$student.email"
+        },
+        course: {
+          _id: "$courseId",
+          title: "$courseSnapshot.title"
+        },
+        tutor: {
+          _id: "$tutor._id",
+          name: { $ifNull: ["$tutor.name", "Unknown Tutor"] }
+        },
+        status: 1,
+        progress: 1,
+        enrolledAt: 1
+      }
+    },
+    { $sort: { enrolledAt: -1 } },
+    {
+      $facet: {
+        metadata: [{ $count: "total" }],
+        data: [{ $skip: skip }, { $limit: Number(limit) }]
+      }
+    }
   );
 
-  const avgRating =
-    courses.reduce((acc, c) => acc + (c.ratingsAverage || 0), 0) /
-    courses.length;
-
-  const totalEarnings = courses.reduce((acc, c) => {
-    if (c.courseType === "paid") {
-      return acc + (c.price || 0) * (c.totalEnrollments || 0);
-    }
-
-    if (c.courseType === "credit") {
-      return acc + (c.creditCost || 0) * (c.totalEnrollments || 0);
-    }
-
-    return acc;
-  }, 0);
+  const [result] = await Enrollment.aggregate(pipeline);
 
   return {
-    totalCourses,
-    totalEnrollments,
-    totalHours,
-    avgRating: Number(avgRating.toFixed(1)),
-    totalEarnings
+    enrollments: result.data,
+    totalCount: result.metadata[0]?.total || 0,
+    page,
+    limit,
+    totalPages: Math.ceil((result.metadata[0]?.total || 0) / limit)
   };
 };
-export const toggleBlockUserService = async (userId: string) => {
-const user = await User.findById(userId).exec();
 
-  if (!user) throw new ApiError(404, "User not found");
-
-  user.isBlocked = !user.isBlocked; 
-  await user.save();
-
-  return user;
-};
-
+// ================= USER DETAILS =================
 export const getUserDetailsService = async (userId: string) => {
   const user = await User.findById(userId).lean();
-
   if (!user) throw new ApiError(404, "User not found");
 
-  // ---------- STUDENT ----------
   const enrollments = await Enrollment.find({ userId });
-
-  const totalEnrolled = enrollments.length;
-
-  // ---------- TUTOR ----------
   const courses = await Course.find({ tutorId: userId });
-
-  const totalCourses = courses.length;
-
-  const totalEnrollments = courses.reduce(
-    (acc, c) => acc + (c.totalEnrollments || 0),
-    0
-  );
-
-  const totalEarnings = courses.reduce((acc, c) => {
-    if (c.courseType === "paid") {
-      return acc + (c.price || 0) * (c.totalEnrollments || 0);
-    }
-
-    if (c.courseType === "credit") {
-      return acc + (c.creditCost || 0) * (c.totalEnrollments || 0);
-    }
-
-    return acc;
-  }, 0);
 
   return {
     user,
-
     student: {
-      totalEnrolled,
+      totalEnrolled: enrollments.length,
       credits: user.userCreditBalance || 0
     },
-
     tutor: {
-      totalCourses,
-      totalEnrollments,
-      totalEarnings
+      totalCourses: courses.length,
+      totalEnrollments: courses.reduce((a, c) => a + (c.totalEnrollments || 0), 0),
+      totalEarnings: courses.reduce(
+        (a, c) =>
+          a +
+          ((c.courseType === "paid" ? c.price : c.creditCost || 0) *
+            (c.totalEnrollments || 0)),
+        0
+      )
     }
   };
+};
+
+// ================= BLOCK =================
+export const toggleBlockUserService = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) throw new ApiError(404, "User not found");
+
+  user.isBlocked = !user.isBlocked;
+  await user.save();
+
+  return user;
 };

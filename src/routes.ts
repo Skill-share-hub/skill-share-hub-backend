@@ -10,6 +10,8 @@ import paymentRoutes from './modules/payments/routes/payment.routes';
 import enrollmentRoutes from './modules/enrollments/enrollments.routes'
 import adminRoutes from './modules/admin/admin.routes';
 import premiumApplication  from './modules/premiumTutor/premiumApplication.routes';
+import chatbotRouter from './modules/chatbot/chatbot.routes'
+import reportRoutes from './modules/reports/report.routes';
 const router = Router();
 
 router.get('/health', (_req, res) => {
@@ -29,5 +31,7 @@ router.use('/payments', paymentRoutes);
 router.use('/enrollments',enrollmentRoutes);
 router.use('/admin', adminRoutes);
 router.use('/premium-application',premiumApplication);
+router.use('/chatbot',chatbotRouter);
+router.use('/reports', reportRoutes);
 
 export default router;
