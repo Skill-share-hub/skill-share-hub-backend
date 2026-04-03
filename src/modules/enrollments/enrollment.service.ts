@@ -3,6 +3,7 @@ import { Enrollment } from "./enrollment.model";
 import { ApiError } from "../../utils/ApiError";
 import { User } from "../users/user.model";
 import { Content, Course } from "../courses/course.model";
+import { askAi } from "../../services/askai.service";
 
 
 export const enrolledCourses = async (userId:Types.ObjectId,status:string)=> {
@@ -84,4 +85,52 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
         enrollment : updatedEnrollment,
         completed : !alreadyCompleted
     };
+}
+
+export const makeQuizService = async (contentId : string , userId:string) => {
+    const content = await Content.findById(contentId).select("title summary").lean();
+    if(!content)throw new ApiError(404,"content not found");
+
+    const enrollment = await Enrollment.findOne(
+        {userId , courseId : content.courseId}
+    ).lean();
+    if(!enrollment)throw new ApiError(403,"user not enrolled the course!");
+
+    const prompt = `
+       Generate exactly 3 multiple-choice questions based on the given content.
+
+        Rules:
+
+        Each question must have exactly 4 options.
+        Only one option must be correct.
+        Do NOT include explanations.
+        Do NOT include any extra text.
+        Output must be in valid JSON format only.
+
+        Format:
+
+        [
+            {
+                "question": "Question text",
+                "options": ["Option A", "Option B", "Option C", "Option D"],
+                "answer": "Correct option"
+            }
+        ]
+        
+        Content:
+        { title : ${content.title} , summary : ${content.summary} }
+    `
+
+    let response:any = {}
+    
+    try{
+        response = await askAi([{role : "system",content : prompt }],"mistralai/mistral-small-3.1-24b-instruct");
+    }catch(error){
+        response = await askAi([{role : "system",content : prompt }],"meta-llama/llama-3.1-8b-instruct");
+    }
+
+    const quizData = JSON.parse(response.content);
+
+    return quizData ;
+
 }

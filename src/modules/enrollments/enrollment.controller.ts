@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { enrolledCourses, enrollmentById, markContentService } from "./enrollment.service";
+import { enrolledCourses, enrollmentById, markContentService , makeQuizService } from "./enrollment.service";
 import { ApiResponse } from "../../utils/ApiResponse";
 
 
@@ -50,5 +50,26 @@ export const markContent = async (req:Request,res:Response,next:NextFunction):Pr
     } catch (error) {
         next(error);
     }
+}  
+
+export const getQuizController = async (req:Request,res:Response,next:NextFunction):Promise<void> => {
+    try{
+        const id = req.params.id as string
+        const quiz = await makeQuizService(id,req.user._id);
+
+        res.status(200).json(
+            new ApiResponse("quiz created",quiz,true)
+        )
+    }catch(error){
+        next(error);
+    }
 }
-    
+
+export const getSummaryController = async (req:Request,res:Response,next:NextFunction) => {
+    try{
+        const id = req.params.id as string;
+
+    }catch(error){
+        next(error);
+    }
+}
