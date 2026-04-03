@@ -88,7 +88,7 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
 }
 
 export const makeQuizService = async (contentId : string , userId:string) => {
-    const content = await Content.findById(contentId).select("title summary").lean();
+    const content = await Content.findById(contentId).select("courseId title summary").lean();
     if(!content)throw new ApiError(404,"content not found");
 
     const enrollment = await Enrollment.findOne(
