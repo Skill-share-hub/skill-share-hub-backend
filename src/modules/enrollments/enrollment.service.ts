@@ -97,7 +97,7 @@ export const makeQuizService = async (contentId : string , userId:string) => {
     if(!enrollment)throw new ApiError(403,"user not enrolled the course!");
 
     const prompt = `
-       Generate exactly 3 multiple-choice questions based on the given content.
+       Generate exactly 5 multiple-choice questions based on the given content.
 
         Rules:
 
