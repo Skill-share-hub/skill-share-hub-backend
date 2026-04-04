@@ -219,10 +219,17 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
 
     await createNotification({
     userId: tutor._id,
-    title: "New Enrollment",
-    message: `${user.name} enrolled in "${course.title}"`,
-    type: "SUCCESS",
-  });
+      title: "New Enrollment",
+      message: `${user.name} enrolled in "${course.title}"`,
+      type: "SUCCESS",
+    });
+
+    await createNotification({
+      userId: user._id as any,
+      title: "Enrollment Successful",
+      message: `You have successfully enrolled in "${course.title}"`,
+      type: "SUCCESS",
+    });
 
     return {
       success: true,
@@ -386,6 +393,13 @@ export const verifyRazorpayPayment = async (
     userId: tutor._id,
     title: "New Enrollment",
     message: `${user.name} enrolled in "${course.title}"`,
+    type: "SUCCESS",
+  });
+
+  await createNotification({
+    userId: user._id,
+    title: "Enrollment Successful",
+    message: `You have successfully enrolled in "${course.title}"`,
     type: "SUCCESS",
   });
     return {

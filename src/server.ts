@@ -10,14 +10,14 @@ const startServer = async (): Promise<void> => {
   try {
     await connectToDatabase();
     await connectRedis();
-    app.listen(env.port, () => {
+    initSocket(server); 
+    server.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);
-    });
-    initSocket(server);
-  } catch (error) {
+    });  } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
-void startServer();
+void startServer();  
+   

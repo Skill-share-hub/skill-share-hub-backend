@@ -8,6 +8,7 @@ import { razorpay } from "../../config/razorpay";
 import crypto from 'crypto'
 import { env } from "../../config/env";
 import { Enrollment } from "../enrollments/enrollment.model";
+import { createNotification } from "../notifications/notification.service";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
   const user = await User.findById(userId);
@@ -145,6 +146,13 @@ export const verifyPayment = async (payload:any, userId:Types.ObjectId) => {
     );
 
     if(!user)throw new ApiError(404,"User Not found!");
+
+    await createNotification({
+      userId: userId as any,
+      title: "Credits Added",
+      message: `Successfully added ${transaction.amount} credits to your wallet.`,
+      type: "SUCCESS",
+    });
 
   }else {
     throw new ApiError(403,"Invalid signature");

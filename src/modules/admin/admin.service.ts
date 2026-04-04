@@ -3,6 +3,7 @@ import { Course } from "../courses/course.model";
 import { Enrollment } from "../enrollments/enrollment.model";
 import { User } from "../users/user.model";
 import { Types } from "mongoose";
+import { createNotification } from "../notifications/notification.service";
 
 // ================= GET USERS =================
 export const getAllTutorsService = async (query: any) => {
@@ -212,6 +213,15 @@ export const toggleBlockUserService = async (userId: string) => {
 
   user.isBlocked = !user.isBlocked;
   await user.save();
+
+  await createNotification({
+    userId: user._id as any,
+    title: "Account Status",
+    message: user.isBlocked 
+      ? "Your account has been banned by the administrator." 
+      : "Your account has been unbanned by the administrator.",
+    type: user.isBlocked ? "ERROR" : "SUCCESS",
+  });
 
   return user;
 };

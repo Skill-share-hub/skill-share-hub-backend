@@ -60,9 +60,9 @@ export const deleteApplication = async (
   }
 
   // Delete all documents from S3
-  const s3DeletePromises = application.documents.map((doc) =>
-    deleteFromS3(doc.s3Key)
-  );
+  const s3DeletePromises = application.documents
+    .filter((doc) => doc.s3Key)
+    .map((doc) => deleteFromS3(doc.s3Key as string));
   await Promise.all(s3DeletePromises);
   await application.deleteOne();
 
@@ -89,9 +89,9 @@ export const resubmitApplication = async (
   }
 
   // Delete old S3 files
-  const s3DeletePromises = existing.documents.map((doc) =>
-    deleteFromS3(doc.s3Key)
-  );
+  const s3DeletePromises = existing.documents
+    .filter((doc) => doc.s3Key)
+    .map((doc) => deleteFromS3(doc.s3Key as string));
 
 
   await Promise.all(s3DeletePromises);
