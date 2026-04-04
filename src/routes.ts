@@ -12,6 +12,7 @@ import adminRoutes from './modules/admin/admin.routes';
 import premiumApplication  from './modules/premiumTutor/premiumApplication.routes';
 import chatbotRouter from './modules/chatbot/chatbot.routes'
 import reportRoutes from './modules/reports/report.routes';
+import notificationRoutes from './modules/notifications/notification.routes';
 const router = Router();
 
 router.get('/health', (_req, res) => {
@@ -33,5 +34,5 @@ router.use('/admin', adminRoutes);
 router.use('/premium-application',premiumApplication);
 router.use('/chatbot',chatbotRouter);
 router.use('/reports', reportRoutes);
-
+router.use('/notifications', notificationRoutes);
 export default router;

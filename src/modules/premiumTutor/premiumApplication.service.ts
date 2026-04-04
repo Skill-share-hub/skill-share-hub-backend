@@ -4,6 +4,7 @@ import { deleteFromS3 } from "../../utils/deleteFromS3";
 import { PremiumApplication } from "./premiumApplication.model";
 import { GetAllApplicationsQuery, SubmitApplicationInput } from "./premiumApplication.types";
 import { User } from "../users/user.model";
+import { createNotification } from "../notifications/notification.service";
 
 export const submitApplication = async (data: SubmitApplicationInput) => {
   // Block if a pending/approved application already exists
@@ -185,6 +186,14 @@ export const approveApplication = async (adminId: string, applicationId: string)
   await application.save({session});
   await User.findByIdAndUpdate(application.tutorId, { role: "premiumTutor" }, { session, new: true });
   await session.commitTransaction();
+
+  await createNotification({
+  userId: application.tutorId,
+  title: "Account Approved",
+  message: "Your tutor account is approved!",
+  type: "SUCCESS",
+});
+
   return application;
   }
   catch(error){
@@ -217,5 +226,12 @@ export const rejectApplication = async (
   application.reviewedAt = new Date();
 
   await application.save();
+
+  await createNotification({
+  userId: application.tutorId,
+  title: "Account Rejected",
+  message: "Your tutor account is rejected!",
+  type: "ERROR",
+});
   return application;
 };
