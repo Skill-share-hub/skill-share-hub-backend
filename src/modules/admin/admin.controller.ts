@@ -1,6 +1,6 @@
 import { User } from "../users/user.model";
 import { Request, Response } from "express";
-import { getAllTutorsService, getAllEnrollmentsService, getEnrollmentByIdService,toggleBlockUserService } from "./admin.service";
+import { getAllTutorsService, getAllEnrollmentsService, getEnrollmentByIdService, toggleBlockUserService, getUserDetailsService } from "./admin.service";
 
 export const getAllTutors = async (req: any, res: any, next: any) => {
   try {
@@ -29,15 +29,20 @@ const id = req.params.id as string;
   });
 };
 
-export const getUserDetails = async (req: Request, res: Response) => {
-  const id = req.params.id as string;
+export const getUserDetails = async (req: Request, res: Response, next: any) => {
+  try {
+    const id = req.params.id as string;
 
-  const data = await getUserDetailsService(id);
+    const data = await getUserDetailsService(id);
 
-  res.json({
-    success: true,
-    data
-  });
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getAllEnrollments = async (req: any, res: any, next: any) => {
   try {
@@ -63,4 +68,4 @@ export const getEnrollmentById = async (req: any, res: any, next: any) => {
   } catch (error) {
     next(error);
   }
-};
+}

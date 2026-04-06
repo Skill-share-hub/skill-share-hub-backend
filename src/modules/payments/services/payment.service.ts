@@ -10,6 +10,7 @@ import crypto from "crypto";
 import { env } from "../../../config/env";
 import mongoose from "mongoose";
 import { COURSE_ENROLLMENT_COMMISSION } from "../const/payments.content";
+import { createNotification } from "../../notifications/notification.service";
 
 export const getPurchaseSummary = async (
   courseId: string,
@@ -216,6 +217,20 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     await session.commitTransaction();
     session.endSession();
 
+    await createNotification({
+    userId: tutor._id,
+      title: "New Enrollment",
+      message: `${user.name} enrolled in "${course.title}"`,
+      type: "SUCCESS",
+    });
+
+    await createNotification({
+      userId: user._id as any,
+      title: "Enrollment Successful",
+      message: `You have successfully enrolled in "${course.title}"`,
+      type: "SUCCESS",
+    });
+
     return {
       success: true,
       message: "Course purchased with credits"
@@ -374,10 +389,24 @@ export const verifyRazorpayPayment = async (
     await session.commitTransaction();
     session.endSession();
 
+  await createNotification({
+    userId: tutor._id,
+    title: "New Enrollment",
+    message: `${user.name} enrolled in "${course.title}"`,
+    type: "SUCCESS",
+  });
+
+  await createNotification({
+    userId: user._id,
+    title: "Enrollment Successful",
+    message: `You have successfully enrolled in "${course.title}"`,
+    type: "SUCCESS",
+  });
     return {
       success: true,
       message: "Payment verified and course enrolled"
     };
+
   } catch (error) {
     await session.abortTransaction();
     session.endSession();

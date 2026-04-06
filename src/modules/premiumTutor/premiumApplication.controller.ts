@@ -50,7 +50,7 @@ export const getApplicationStatus = async (req: Request, res: Response) => {
 export const deleteApplication = async (req: Request, res: Response) => {
   try {
     const result = await PremiumApplicationService.deleteApplication(
-      req.params.id,
+      req.params.id as string,
       req.user._id
     );
     res.status(200).json({ success: true, ...result });
@@ -62,7 +62,7 @@ export const deleteApplication = async (req: Request, res: Response) => {
 export const resubmitApplication = async (req: Request, res: Response) => {
   try {
     const application = await PremiumApplicationService.resubmitApplication(
-      req.params.id,
+      req.params.id as string,
       { tutorId: req.user._id, ...req.body } 
     );
     res.status(201).json({ success: true, data: application });
@@ -106,7 +106,7 @@ export const getApplicationStats = async (_req: Request, res: Response) => {
 export const getApplicationById = async (req: Request, res: Response) => {
   try {
     const application = await PremiumApplicationService.getApplicationById(
-      req.params.id
+      req.params.id as string
     );
     res.status(200).json({ success: true, data: application });
   } catch (error: any) {
@@ -138,7 +138,7 @@ export const rejectApplication = async (req: Request, res: Response) => {
 
     const application = await PremiumApplicationService.rejectApplication(
       req.user._id,
-      req.params.id,
+      req.params.id as string,
       rejectionReason
     );
     res.status(200).json({ success: true, data: application });
