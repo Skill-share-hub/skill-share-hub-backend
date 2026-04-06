@@ -4,11 +4,17 @@ import { ApiError } from "../../utils/ApiError";
 import { Content } from "../courses/course.model";
 import { Message } from "./chatbot.model";
 import { MessagePayload, MessagesType } from "./chatbot.types";
+import { Enrollment } from "../enrollments/enrollment.model";
 
 export const askAiService = async (payload:MessagePayload) => {
 
   const content = await Content.findById(payload.contentId).lean();
   if(!content)throw new ApiError(404,"no messages found");
+
+  const enrollment = await Enrollment.findOne(
+    {userId : payload.userId , courseId : content.courseId}
+  ).lean();
+  if(!enrollment)throw new ApiError(403,"user not enrolled the course!");
 
   const chats = await Message
   .findOne({userId : payload.userId, contentId : payload.contentId})
@@ -39,6 +45,11 @@ export const getChatService = async (userId:Types.ObjectId,contentId:Types.Objec
 
   const content = await Content.findOne(contentId).lean();
   if(!content)throw new ApiError(404,"No content found!");
+
+  const enrollment = await Enrollment.findOne(
+    {userId : userId , courseId : content.courseId}
+  ).lean();
+  if(!enrollment)throw new ApiError(403,"user not enrolled the course!");
 
   const chat = await Message.findOne({userId,contentId}).lean();
 

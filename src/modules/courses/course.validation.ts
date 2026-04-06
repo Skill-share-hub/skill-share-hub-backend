@@ -8,6 +8,12 @@ const objectIdSchema = z.string().refine(
   }
 );
 
+const quizSchema = z.object({
+  question : z.string().min(4).max(100),
+  options : z.array(z.string()).min(1).max(4),
+  answer : z.string().min(4).max(50)
+})
+
 export const ContentSchema = z.object({
   courseId : z
   .string()
@@ -22,7 +28,8 @@ export const ContentSchema = z.object({
   contentUrl : z.string(),
   summary : z.string(),
   thumbnailUrl : z.string(),
-  duration : z.coerce.number().min(1 , "video should be atleast 1 minute")
+  duration : z.coerce.number().min(1 , "video should be atleast 1 minute"),
+  quizData : z.array(quizSchema)
 }).partial();
 
 const baseSchema = z.object({
