@@ -2,7 +2,7 @@ import { Types } from "mongoose";
 import { askAi } from "../../services/askai.service";
 import { ApiError } from "../../utils/ApiError";
 import { Content } from "../courses/course.model";
-import { Message } from "./chatbot.model";
+import { Message, RoomChat } from "./chatbot.model";
 import { MessagePayload, MessagesType } from "./chatbot.types";
 import { Enrollment } from "../enrollments/enrollment.model";
 
@@ -84,4 +84,19 @@ export const getChatService = async (userId:Types.ObjectId,contentId:Types.Objec
   }
 
   return chat.messages ;
+}
+
+export const getRoomMessages = async (contentId:string,limit:number) => {
+
+  const messages = await RoomChat.find({contentId})
+  .populate({
+    path : "sender",
+    select : "name avatarUrl"
+  })
+  .sort({
+    createdAt : 1
+  })
+  .limit(limit)
+
+  return messages ;
 }

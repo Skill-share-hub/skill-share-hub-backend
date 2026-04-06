@@ -133,8 +133,18 @@ export const makeQuizService = async (contentId : string , userId:string) => {
         }
     }
 
-    const quizData = JSON.parse(response.content);
+    const aiRes:string = response.content ;
 
-    return [...quizData,...(content?.quizData || [])] ;
+    const start = aiRes.indexOf("[");
+    const end = aiRes.lastIndexOf("]")+1;
+
+    const outputRes = aiRes.slice(start,end);
+
+    try{
+        const quizData = JSON.parse(outputRes);
+        return [...quizData,...(content?.quizData || [])] ;
+    }catch(error){
+        return content?.quizData || []
+    }
 
 }

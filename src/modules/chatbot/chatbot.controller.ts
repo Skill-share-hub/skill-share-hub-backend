@@ -31,3 +31,18 @@ export const askQuestionController = async (req:Request , res:Response , next:Ne
     next(error);
   }
 }
+
+export const getRoomChatMessages = async (req:Request , res:Response , next:NextFunction) =>  {
+  try{
+    const contentId = req.params.id as string ;
+    const limit = Number(req.query.limit) as number ;
+
+    const messages = await chatbotService.getRoomMessages(contentId,limit);
+
+    res.status(200).json(
+      new ApiResponse("messages found!",messages,true)
+    );
+  }catch(error){
+    next(error);
+  }
+}

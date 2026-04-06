@@ -24,4 +24,26 @@ const chatSchema = new Schema({
   ]
 },{timestamps : true});
 
+
+const roomChatSchema = new Schema({
+  sender : {
+    type : Types.ObjectId,
+    ref : "User",
+    required : true
+  },
+
+  message : {
+    type :String,
+    required : true
+  },
+
+  contentId : {
+    type : Types.ObjectId,
+    ref : "Content",
+    required : true
+  }
+
+},{timestamps : true});
+
 export const Message = model("Message",chatSchema);
+export const RoomChat = model("RoomChat",roomChatSchema);
