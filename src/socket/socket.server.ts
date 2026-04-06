@@ -1,7 +1,6 @@
 import { Server } from "socket.io";
 import { env } from "../config/env";
 import { chatBotSocket } from "../modules/chatbot/chatbot.socket";
-import cookie from 'cookie'
 import jwt from 'jsonwebtoken'
 
 let io: Server;
