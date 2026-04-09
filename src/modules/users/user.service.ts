@@ -41,12 +41,20 @@ export const getUserProfileService = async (userId: string, role: string) => {
 export const updateUserRoleService = async (userId: string, role: Extract<UserRole, "tutor" | "student">) => {
   const allowedRoles = ["student", "tutor"];
 
-if (!allowedRoles.includes(role)) {
-  throw new ApiError(400, "Invalid role");
+const user = await User.findById(userId).select("role");
+if (!user) throw new ApiError(404, "User not found");
+
+const currentRole = user.role;
+let normalizedRole: UserRole;
+
+if (currentRole === "premiumTutor" && role === "tutor") {
+  normalizedRole = "premiumTutor";
+} else {
+  normalizedRole = role;
 }
  const updatedUser = await User.findByIdAndUpdate(
     userId,
-    { $set: { role } },
+    { $set: { role:normalizedRole } },
     {
       returnDocument: 'after',
       runValidators: true
