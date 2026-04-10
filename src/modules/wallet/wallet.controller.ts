@@ -1,8 +1,9 @@
 import { NextFunction, Response, Request } from "express";
-import { razorpayCreditOrder, verifyPayment, walletSummary } from "./wallet.service";
+import { razorpayCreditOrder, verifyPayment, verifyUpiService, walletSummary, withdrawalService } from "./wallet.service";
 import { QuerySchema } from "./wallet.validation";
 import { ApiError } from "../../utils/ApiError";
 import { ApiResponse } from "../../utils/ApiResponse";
+import { User } from "../users/user.model";
 
 
 
@@ -65,11 +66,34 @@ export const verifyCreditPayment = async (req:Request, res:Response, next:NextFu
   }
 }
 
-export const verifyUpi = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+export const verifyUpiController = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
     const {upi} = req.body ;
 
+    const isVerified = await verifyUpiService(upi,req.user._id);
 
+    if(!isVerified.success){
+      throw new ApiError(400,isVerified.message);
+    }
+
+    res.status(200).json(
+      new ApiResponse("User UPI ID updated!",{name : isVerified.name , upi },true)
+    );
+
+  }catch(error){
+    next(error);
+  }
+}
+
+export const withdrawalController = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
+  try{
+    const amount = req.body.amount ;
+
+    const data = await withdrawalService(amount,req.user._id);
+
+    res.status(201).json(
+      new ApiResponse("Credits withdrawal success!",data,true)
+    );
   }catch(error){
     next(error);
   }

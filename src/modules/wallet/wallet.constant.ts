@@ -1,3 +1,11 @@
 export const CREDIT_VALUE = 0.5 ;
 
 export const CREDIT_PURCHASE_COMMISSION = 0.02 ;
+
+export const CREDIT_WITHDRAW_LIMIT = 5000 ;
+
+export const CREDIT_WITHDRAW_MIN_LIMIT = 100 ;
+
+export const CREDIT_WITHDRAW_MAX_LIMIT = 10000 ;
+
+export const CREDIT_WITHDRAW_COMMISSION = 0.02 ;
