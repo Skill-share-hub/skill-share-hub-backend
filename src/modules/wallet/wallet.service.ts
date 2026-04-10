@@ -1,7 +1,7 @@
 import { Types } from "mongoose"
 import { User } from "../users/user.model"
 import { ApiError } from "../../utils/ApiError";
-import { CREDIT_PURCHASE_COMMISSION, CREDIT_VALUE } from "./wallet.constant";
+import { CREDIT_PURCHASE_COMMISSION, CREDIT_VALUE, CREDIT_WITHDRAW_COMMISSION, CREDIT_WITHDRAW_LIMIT , CREDIT_WITHDRAW_MAX_LIMIT, CREDIT_WITHDRAW_MIN_LIMIT} from "./wallet.constant";
 import { IQuery } from "./wallet.validation";
 import { Transaction } from "./wallet.model";
 import { razorpay } from "../../config/razorpay";
@@ -19,16 +19,26 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
        return {
       creditBalance: user?.tutorProfile?.totalCreditsEarned ?? 0,
       creditValue: (user?.tutorProfile?.totalCreditsEarned ?? 0) * CREDIT_VALUE,
-      creditConst: CREDIT_VALUE
+      creditConst: CREDIT_VALUE,
+      creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
+      creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
+      creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
+      creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
+      creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
     }
     }
     return {
       creditBalance: user.userCreditBalance,
       creditValue: user.userCreditBalance * CREDIT_VALUE,
-      creditConst: CREDIT_VALUE
+      creditConst: CREDIT_VALUE,
+      creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
+      creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
+      creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
+      creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
+      creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
     }
   }
-  
+
   // --- Logic for Full History ---
 
    const transactionQuery: any = { userId };
@@ -70,10 +80,14 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
     creditBalance: finalBalance,
     creditValue: finalBalance * CREDIT_VALUE,
     transactions: enrichedTransactions,
-    creditConst: CREDIT_VALUE
+    creditConst: CREDIT_VALUE,
+    creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
+    creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
+    creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
+    creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
+    creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
   }
 }
-
 
 export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId) => {
 
@@ -159,4 +173,61 @@ export const verifyPayment = async (payload:any, userId:Types.ObjectId) => {
   }
 
   return true ;
+}
+
+export const verifyUpiService = async  (upiId:string,userId:string) => {
+
+  const regex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
+
+  if (!upiId) {
+    return { success: false, message: "UPI ID is required" };
+  }
+
+  if (!regex.test(upiId)) {
+    return { success: false, message: "Invalid UPI format" };
+  }
+
+  const user = await User.findOneAndUpdate({_id : userId},{userUpiId : upiId});
+  if(!user)return {success : false, message : "User not found!"}
+
+  return { success: true, message: "Valid UPI format", name : user.name };
+}
+
+export const withdrawalService = async (amount:number, userId:string) => {
+  
+  const user = await User.findById(userId).select("userCreditBalance");
+  if(!user)throw new ApiError(404,"user not found!");
+
+  if(amount > user.userCreditBalance){
+    throw new ApiError(400,"Insufficient balance!");
+  }
+
+  let withdrawAmount = 0 ;
+  let platformCommission = 0 ;
+
+  if(amount > CREDIT_WITHDRAW_LIMIT){
+    platformCommission = amount * CREDIT_WITHDRAW_COMMISSION ;
+    withdrawAmount = amount - platformCommission ;
+  }else{
+    withdrawAmount = amount ;
+  }
+
+  console.log(user.userCreditBalance)
+
+  user.userCreditBalance -= withdrawAmount ;
+  await user.save();
+
+  console.log(user.userCreditBalance)
+
+  return await Transaction.create({
+    userId : user._id,
+    amount : withdrawAmount,
+    currency : withdrawAmount * CREDIT_VALUE,
+    creditBalance : user.userCreditBalance,
+    type : 'credit_withdraw',
+    method : "wallet",
+    status : "pending",
+    platformCommission : platformCommission ?? 0
+  });
+
 }

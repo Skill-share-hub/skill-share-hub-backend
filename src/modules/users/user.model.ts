@@ -14,6 +14,7 @@ export interface IUser {
   isBlocked: boolean;
   provider: "local" | "google";
   googleId?: string;
+  userUpiId : string;
 
   savedCourses: Types.ObjectId[];
   enrolledCourses: Types.ObjectId[];
@@ -82,9 +83,11 @@ const userSchema = new Schema<IUser>(
       default: false,
     },
     isBlocked: {
-  type: Boolean,
-  default: false
-},
+      type: Boolean,
+      default: false
+    },
+
+    userUpiId : String,
 
     // Auth
     provider: {

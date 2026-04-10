@@ -29,6 +29,7 @@ const transactionSchema = new Schema<ITransaction>({
     enum : ["credit_purchase" , "credit_withdraw" , "course_purchase", "tutor_earning", "platform_commission"],
     required : true
   },
+  
   relatedId : {
     type : Schema.Types.ObjectId,
     required : false
@@ -47,8 +48,7 @@ const transactionSchema = new Schema<ITransaction>({
   },
 
   razorpayOrderId: {
-    type : String,
-    required : true
+    type : String
   },
   
   platformCommission: {
