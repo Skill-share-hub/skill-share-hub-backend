@@ -4,6 +4,7 @@ import { IContent, ICourse, PCourse, TQuery } from "./course.validation";
 import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
+import { COURSE_CATEGORIES } from "./course.constants";
 
 export const makeCourse = async (input: ICourse, tutorId: Types.ObjectId, role: string, thumbnailUrl: string) => {
 
@@ -104,10 +105,7 @@ export const changeStatus = async (status: statusType, id: string, tutorId: stri
 
 export const getCourses = async (query: TQuery, userId: Types.ObjectId | string) => {
 
-  const queryObj: Partial<QueryType> = {}
-if (!userId) {
-  queryObj.status = "published";
-}
+  const queryObj: Partial<QueryType> = { status : "published" , contentModules : {$ne : []} }
   let sortObj:SortType = {}
   
   const {limit,page} = query ;
@@ -178,6 +176,8 @@ if (!userId) {
   }
 
   if (query.recommended && query.courseId){
+    if(queryObj.$or) delete queryObj.$or;
+
     const course = await Course.findById(query.courseId);
     queryObj.courseType = course?.courseType ;
     queryObj.title = { $regex: course?.title|| "", $options: "i" } ;
@@ -207,7 +207,8 @@ if (!userId) {
     page,
     limit,
     totalCount,
-    totalPages : Math.ceil(totalCount/limit)
+    totalPages : Math.ceil(totalCount/limit),
+    categories : COURSE_CATEGORIES
   }
 
 }

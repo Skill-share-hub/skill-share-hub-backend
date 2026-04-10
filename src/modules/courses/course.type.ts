@@ -7,6 +7,7 @@ export type QueryType = {
     $regex: string
     $options: string
   },
+  contentModules : any;
   $or : any,
   price : {
     $gte : number,
