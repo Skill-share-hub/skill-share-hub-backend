@@ -57,6 +57,8 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
     .limit(query.limit || 10)
     .sort({ createdAt: -1 });
 
+  const transactionsCount = await Transaction.countDocuments(transactionQuery);
+
 
   const enrollments = await Enrollment.find({ userId });
 
@@ -80,6 +82,7 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
     creditBalance: finalBalance,
     creditValue: finalBalance * CREDIT_VALUE,
     transactions: enrichedTransactions,
+    totalTransactions : transactionsCount,
     creditConst: CREDIT_VALUE,
     creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
     creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,

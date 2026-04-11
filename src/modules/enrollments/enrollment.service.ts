@@ -4,6 +4,7 @@ import { ApiError } from "../../utils/ApiError";
 import { User } from "../users/user.model";
 import { Content, Course } from "../courses/course.model";
 import { askAi } from "../../services/askai.service";
+import { redisClient } from "../../config/redis";
 
 
 export const enrolledCourses = async (userId:Types.ObjectId,status:string)=> {
@@ -94,7 +95,15 @@ export const makeQuizService = async (contentId : string , userId:string) => {
     const enrollment = await Enrollment.findOne(
         {userId , courseId : content.courseId}
     ).lean();
-    if(!enrollment)throw new ApiError(403,"user not enrolled the course!");
+    if(!enrollment)throw new ApiError(403,"user not enrolled the course!"); 
+
+    const outputRedis = await redisClient.get(`quiz:${content._id}`);
+    const parsedData = outputRedis ? JSON.parse(outputRedis) : null
+    
+    if(parsedData && parsedData.length){
+        return parsedData
+    }
+
 
     const prompt = `
        Generate exactly 5 multiple-choice questions based on the given content.
@@ -142,7 +151,9 @@ export const makeQuizService = async (contentId : string , userId:string) => {
 
     try{
         const quizData = JSON.parse(outputRes);
-        return [...quizData,...(content?.quizData || [])] ;
+        const outputData = [...quizData,...(content?.quizData || [])]
+        await redisClient.set(`quiz:${content._id}`,JSON.stringify(outputData),{ EX : 3600 * 24 });
+        return  outputData ;
     }catch(error){
         return content?.quizData || []
     }
