@@ -21,7 +21,7 @@ export const createNotification = async ({
   });
 
   const io = getIO();
-  io.to(userId).emit("notification", notification);
+  io.to(userId.toString()).emit("notification", notification);
 
   return notification;
 };
