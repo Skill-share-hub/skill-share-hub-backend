@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy Backend
 
 on:
   push:
@@ -10,39 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      #  Setup SSH
-      - name: Setup SSH using PEM
-        run: |
-          mkdir -p ~/.ssh
-          printf "%s\n" "${{ secrets.EC2_HOST }}" > ~/.ssh/ec2.pem
-          chmod 400 ~/.ssh/ec2.pem
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-
-      #  Test SSH connection
-      - name: Test SSH
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo ✅ Connected to EC2"
-
-      #  Deploy to server
-      - name: Deploy
-        run: |
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd ~/skill-share-hub-backend
-
-            echo " Pulling latest code..."
+      - name: Deploy to EC2 using PEM
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd skill-share-hub-backend
             git pull origin main
-
-            echo " Installing dependencies..."
             npm install
-
-            echo " Building project..."
             npm run build
-
-            echo " Restarting server..."
             pm2 restart backend || pm2 start dist/server.js --name backend
-
-            echo " Deployment done!"
-          EOF
