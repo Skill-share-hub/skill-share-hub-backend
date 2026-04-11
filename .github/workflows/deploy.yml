@@ -13,26 +13,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      #  STEP 1: Setup SSH FIRST
+      #  Setup SSH
       - name: Setup SSH using PEM
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/ec2.pem
+          printf "%s\n" "${{ secrets.EC2_KEY }}" > ~/.ssh/ec2.pem
           chmod 400 ~/.ssh/ec2.pem
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      #  STEP 2: Test SSH (AFTER setup)
+      #  Test SSH connection
       - name: Test SSH
         run: |
-          ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo connected"
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo ✅ Connected to EC2"
 
-      #  STEP 3: Deploy
+      #  Deploy to server
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-            cd skill-share-hub-backend
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/skill-share-hub-backend
+
+            echo " Pulling latest code..."
             git pull origin main
+
+            echo " Installing dependencies..."
             npm install
+
+            echo " Building project..."
             npm run build
+
+            echo " Restarting server..."
             pm2 restart backend || pm2 start dist/server.js --name backend
+
+            echo " Deployment done!"
           EOF
