@@ -60,8 +60,8 @@ export const getAllTutorsService = async (query: any) => {
 
       ...(isPremium !== undefined &&
         isPremium !== "" && {
-          isPremium: isPremium === "true"
-        })
+        isPremium: isPremium === "true"
+      })
     }
   });
 
@@ -178,6 +178,79 @@ export const getAllEnrollmentsService = async (query: any) => {
   };
 };
 
+
+// ================= ENROLLMENT BY ID =================
+
+export const getEnrollmentByIdService = async (id: string) => {
+  const pipeline = [
+    { $match: { _id: new Types.ObjectId(id) } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "student"
+      }
+    },
+    { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "courses",
+        localField: "courseId",
+        foreignField: "_id",
+        as: "course"
+      }
+    },
+    { $unwind: { path: "$course", preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "course.tutorId",
+        foreignField: "_id",
+        as: "tutor"
+      }
+    },
+    { $unwind: { path: "$tutor", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 1,
+        student: {
+          _id: "$student._id",
+          name: { $ifNull: ["$student.name", "Unknown User"] },
+          email: "$student.email",
+          avatar: "$student.avatarUrl"
+        },
+        course: {
+          _id: "$courseId",
+          title: { $ifNull: ["$courseSnapshot.title", "$course.title"] },
+          thumbnail: "$courseSnapshot.thumbnail",
+          price: "$courseSnapshot.price",
+          courseType: "$courseSnapshot.courseType"
+        },
+        tutor: {
+          _id: "$tutor._id",
+          name: { $ifNull: ["$tutor.name", "Unknown Tutor"] },
+          email: "$tutor.email"
+        },
+        status: 1,
+        progress: 1,
+        enrolledAt: 1,
+        totalWatchTime: 1,
+        completedContent: 1,
+        totalContents: 1,
+        completedAt: 1
+      }
+    }
+  ];
+
+  const results = await Enrollment.aggregate(pipeline);
+  if (!results || results.length === 0) {
+    throw new ApiError(404, "Enrollment not found");
+  }
+
+  return results[0];
+};
+
 // ================= USER DETAILS =================
 export const getUserDetailsService = async (userId: string) => {
   const user = await User.findById(userId).lean();
@@ -217,8 +290,8 @@ export const toggleBlockUserService = async (userId: string) => {
   await createNotification({
     userId: user._id as any,
     title: "Account Status",
-    message: user.isBlocked 
-      ? "Your account has been banned by the administrator." 
+    message: user.isBlocked
+      ? "Your account has been banned by the administrator."
       : "Your account has been unbanned by the administrator.",
     type: user.isBlocked ? "ERROR" : "SUCCESS",
   });
