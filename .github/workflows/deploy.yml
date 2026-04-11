@@ -26,5 +26,6 @@ jobs:
             cd your-repo
             git pull origin main
             npm install
+            npm run build
             pm2 restart backend || pm2 start server.js --name backend
           EOF
