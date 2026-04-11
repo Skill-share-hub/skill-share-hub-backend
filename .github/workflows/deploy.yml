@@ -13,7 +13,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ✅ STEP 1: Setup SSH FIRST
+      #  STEP 1: Setup SSH FIRST
       - name: Setup SSH using PEM
         run: |
           mkdir -p ~/.ssh
@@ -21,12 +21,12 @@ jobs:
           chmod 400 ~/.ssh/ec2.pem
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # ✅ STEP 2: Test SSH (AFTER setup)
+      #  STEP 2: Test SSH (AFTER setup)
       - name: Test SSH
         run: |
           ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo connected"
 
-      # ✅ STEP 3: Deploy
+      #  STEP 3: Deploy
       - name: Deploy
         run: |
           ssh -i ~/.ssh/ec2.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
