@@ -17,7 +17,7 @@ jobs:
       - name: Setup SSH using PEM
         run: |
           mkdir -p ~/.ssh
-          printf "%s\n" "${{ secrets.EC2_KEY }}" > ~/.ssh/ec2.pem
+          printf "%s\n" "${{ secrets.EC2_HOST }}" > ~/.ssh/ec2.pem
           chmod 400 ~/.ssh/ec2.pem
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
