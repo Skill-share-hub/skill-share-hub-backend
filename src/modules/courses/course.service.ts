@@ -5,6 +5,7 @@ import { ApiError } from "../../utils/ApiError";
 import { QueryType, SortType } from "./course.type";
 import { User } from "../users/user.model";
 import { COURSE_CATEGORIES } from "./course.constants";
+import { deleteFromS3, getS3KeyFromUrl } from "../../utils/deleteFromS3";
 
 export const makeCourse = async (input: ICourse, tutorId: Types.ObjectId, role: string, thumbnailUrl: string) => {
 
@@ -266,10 +267,29 @@ export const removeCourse = async (courseId: string, userId: Types.ObjectId) => 
     throw new ApiError(403, "This course does not belong to the tutor.");
   }
 
-  const course = await Course.deleteOne({ _id: courseId });
-  if (course.deletedCount === 0) throw new ApiError(404, "Course not found!");
+  const course = await Course.findOne({ _id: courseId, tutorId: userId }).lean();
+  if (!course) throw new ApiError(404, "Course not found!");
+
+  const contents = await Content.find({ courseId: course._id }).lean();
+
+  const s3Keys = [
+    getS3KeyFromUrl(course.thumbnailUrl),
+    ...contents.flatMap((content) => [
+      getS3KeyFromUrl(content.contentUrl),
+      getS3KeyFromUrl(content.thumbnailUrl),
+    ]),
+  ].filter((key): key is string => Boolean(key));
+
+  const deletedCourse = await Course.deleteOne({ _id: courseId, tutorId: userId });
+  if (deletedCourse.deletedCount === 0) throw new ApiError(404, "Course not found!");
+
+  await Content.deleteMany({ courseId: course._id });
 
   await User.updateOne({ _id: userId }, { $pull: { "tutorProfile.createdCourses": courseId } });
+
+  if (s3Keys.length > 0) {
+    await Promise.all(s3Keys.map((key) => deleteFromS3(key)));
+  }
 
   return true
 }
@@ -391,6 +411,15 @@ export const removeContent =  async (contentId:string, courseId:string, userId:T
   );
 
   await Content.deleteOne({ _id : contentId, courseId: course._id });
+
+  const s3Keys = [
+    getS3KeyFromUrl(content.contentUrl),
+    getS3KeyFromUrl(content.thumbnailUrl),
+  ].filter((key): key is string => Boolean(key));
+
+  if (s3Keys.length > 0) {
+    await Promise.all(s3Keys.map((key) => deleteFromS3(key)));
+  }
 
   return true
 
