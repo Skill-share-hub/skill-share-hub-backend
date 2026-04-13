@@ -12,7 +12,7 @@ export async function checkToken(token:string){
     ) as JwtPayload;
 
     const user = await User.findById(decoded.userId).select(
-      "_id name email role verificationStatus",
+      "_id name email role isVerified isBlocked",
     );
     return user ;
 }
