@@ -184,17 +184,26 @@ export const refreshTokens = async (refreshToken: string): Promise<RegisterRespo
       throw new ApiError(401, 'Invalid refresh token');
     }
 
-      const storedToken = await RefreshToken.findOne({
-    token: refreshToken,
-    userId: user._id
-  });
-  
-  if (!storedToken) {
-    throw new ApiError(401, "Invalid or expired refresh token");
-  }
-  storedToken.revoked = true;
-  storedToken.revokedAt = new Date();
-  await storedToken.save();
+    const storedToken = await RefreshToken.findOneAndUpdate(
+      {
+        token: refreshToken,
+        userId: user._id,
+        revoked: false
+      },
+      {
+        $set: {
+          revoked: true,
+          revokedAt: new Date()
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    if (!storedToken) {
+      throw new ApiError(401, "Invalid or expired refresh token");
+    }
 
     const tokenPayload = {
       userId: user._id.toString(),
@@ -282,7 +291,16 @@ export const resetPasswordService = async (email: string, password: string,otp:s
 };
 
 export const logoutUser = async(userId:string) => {
-  await RefreshToken.findOneAndUpdate({userId},{revoked:true})
+  await RefreshToken.updateMany(
+    { userId, revoked: false },
+    {
+      $set: {
+        revoked: true,
+        revokedAt: new Date()
+      }
+    }
+  );
+
   return {
     success: true,
     message: "Logged out successfully",

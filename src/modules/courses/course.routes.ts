@@ -82,7 +82,11 @@ router.delete('/:id',
   deleteCourse
 );
 
-router.patch("/:id/block", toggleBlockCourse);
+router.patch("/:id/block",
+  authenticate,
+  authorizeRoles("admin"),
+  toggleBlockCourse
+);
 
 // CONTENT ROUTES
 router.post('/:id/content',
