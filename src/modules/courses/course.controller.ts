@@ -184,7 +184,7 @@ export const createContent = async (req: Request, res: Response, next: NextFunct
       thumbnailUrl: thumbnailUrl?.location
     }
 
-    const content = await makeContent(payload, courseId);
+    const content = await makeContent(payload, courseId, req.user?._id);
 
     res.status(201).json(
       new ApiResponse("Content created!", content, true)
@@ -212,7 +212,7 @@ export const updateContent = async (req:Request, res:Response, next:NextFunction
       thumbnailUrl : thumbnailUrl?.location
     }
 
-    const content = await editContent(payload,contentId);
+    const content = await editContent(payload,contentId, req.user?._id);
 
     res.status(200).json(
       new ApiResponse("Content Updated!",content,true)

@@ -308,11 +308,15 @@ export const tutorCourses = async (query:TQuery ,tutorId:Types.ObjectId) => {
   }
 }
 
-export const makeContent = async (input: Required<IContent>, courseId: string) => {
+export const makeContent = async (
+  input: Required<IContent>,
+  courseId: string,
+  tutorId: Types.ObjectId
+) => {
 
   const { contentUrl, duration, summary, thumbnailUrl, title , quizData } = input;
 
-  const course = await Course.findById(courseId).lean();
+  const course = await Course.findOne({ _id: courseId, tutorId }).lean();
   if (!course) throw new ApiError(404, "No course found!");
 
   const content = await Content.create({
@@ -336,8 +340,21 @@ export const makeContent = async (input: Required<IContent>, courseId: string) =
 
 }
 
-export const editContent = async (input:Required<IContent>, contentId:string) => {
+export const editContent = async (
+  input:Required<IContent>,
+  contentId:string,
+  tutorId: Types.ObjectId
+) => {
   const {contentUrl,duration,summary,thumbnailUrl,title , quizData} = input ;
+
+  const existingContent = await Content.findById(contentId).lean();
+  if(!existingContent)throw new ApiError(404,"Content not found!");
+
+  const course = await Course.findOne({
+    _id: existingContent.courseId,
+    tutorId
+  }).lean();
+  if(!course)throw new ApiError(403,"Course doesn't match with user!");
 
   const content = await Content.findOneAndUpdate(
     {_id : contentId},
@@ -359,13 +376,21 @@ export const editContent = async (input:Required<IContent>, contentId:string) =>
 
 export const removeContent =  async (contentId:string, courseId:string, userId:Types.ObjectId) => {
 
-  const course = await Course.findOneAndUpdate({_id :courseId },{$pull : {contentModules : contentId}});
+  const course = await Course.findOne({ _id: courseId, tutorId: userId });
   if(!course) throw new ApiError(404,"Course not found!");
 
-  if(course.tutorId !== userId)throw new ApiError(403,"Course doesn't match with user!");
-
-  const content = await Content.findOneAndDelete({_id : contentId});
+  const content = await Content.findOne({
+    _id: contentId,
+    courseId: course._id
+  });
   if(!content)throw new ApiError(404,"Content not found or already deleted!");
+
+  await Course.updateOne(
+    { _id: courseId, tutorId: userId },
+    { $pull : {contentModules : contentId} }
+  );
+
+  await Content.deleteOne({ _id : contentId, courseId: course._id });
 
   return true
 
