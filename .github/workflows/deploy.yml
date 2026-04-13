@@ -16,9 +16,22 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m   # prevent hanging forever
           script: |
+            set -e   # stop if any command fails
+
+            echo " Moving to project folder"
             cd skill-share-hub-backend
+
+            echo " Pulling latest code"
             git pull origin main
-            npm install
+
+            echo " Installing dependencies"
+            npm ci   #  faster & safer
+
+            echo " Building project"
             npm run build
+
+            echo " Restarting server"
             pm2 restart skill-share-hub || pm2 start dist/server.js --name skill-share-hub
+            echo " Deployment completed"
