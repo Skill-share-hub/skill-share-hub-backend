@@ -11,6 +11,7 @@ import { env } from "../../../config/env";
 import mongoose from "mongoose";
 import { COURSE_ENROLLMENT_COMMISSION } from "../const/payments.content";
 import { createNotification } from "../../notifications/notification.service";
+import { sendEmail } from "../../../services/brevo.service";
 
 export const getPurchaseSummary = async (
   courseId: string,
@@ -231,6 +232,12 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       type: "SUCCESS",
     });
 
+    // Send Emails
+    await Promise.all([
+      sendEmail(user.email, 2, { name: user.name, subject: `You have successfully enrolled in "${course.title}". You can now start learning!` }, 'Enrollment Successful'),
+      sendEmail(tutor.email, 2, { name: tutor.name, subject: `${user.name} has enrolled in your course "${course.title}".` }, 'New Enrollment')
+    ]);
+
     return {
       success: true,
       message: "Course purchased with credits"
@@ -402,6 +409,11 @@ export const verifyRazorpayPayment = async (
     message: `You have successfully enrolled in "${course.title}"`,
     type: "SUCCESS",
   });
+
+  await Promise.all([
+    sendEmail(user.email, 2, { name: user.name, subject: `You have successfully enrolled in "${course.title}". You can now start learning!` }, 'Enrollment Successful'),
+    sendEmail(tutor.email, 2, { name: tutor.name, subject: `${user.name} has enrolled in your course "${course.title}".` }, 'New Enrollment')
+  ]);
     return {
       success: true,
       message: "Payment verified and course enrolled"

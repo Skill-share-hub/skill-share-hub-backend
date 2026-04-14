@@ -5,6 +5,7 @@ import { PremiumApplication } from "./premiumApplication.model";
 import { GetAllApplicationsQuery, SubmitApplicationInput } from "./premiumApplication.types";
 import { User } from "../users/user.model";
 import { createNotification } from "../notifications/notification.service";
+import { sendEmail } from "../../services/brevo.service";
 
 export const submitApplication = async (data: SubmitApplicationInput) => {
   // Block if a pending/approved application already exists
@@ -173,7 +174,7 @@ export const approveApplication = async (adminId: string, applicationId: string)
   const session = await mongoose.startSession();
   session.startTransaction();
   try{
-  const application = await PremiumApplication.findById(applicationId).session(session);
+  const application = await PremiumApplication.findById(applicationId).populate("tutorId", "name email").session(session);
 
   if (!application) throw new ApiError(404, "Application not found.");
   if (application.status === "approved") throw new ApiError(400, "Application already approved.");
@@ -194,6 +195,9 @@ export const approveApplication = async (adminId: string, applicationId: string)
   type: "SUCCESS",
 });
 
+  const tutor = application.tutorId as any;
+  await sendEmail(tutor.email, 2, { name: tutor.name, subject: "Congratulations! Your premium tutor application has been approved. You can now start creating premium courses." }, 'Application Approved');
+
   return application;
   }
   catch(error){
@@ -210,7 +214,7 @@ export const rejectApplication = async (
   applicationId: string,
   rejectionReason: string
 ) => {
-  const application = await PremiumApplication.findById(applicationId);
+  const application = await PremiumApplication.findById(applicationId).populate("tutorId", "name email");
 
   if (!application) throw new ApiError(404, "Application not found.");
   if (application.status === "approved") throw new ApiError(400,"Application already approved.");
@@ -233,5 +237,8 @@ export const rejectApplication = async (
   message: "Your tutor account is rejected!",
   type: "ERROR",
 });
+
+  const tutor = application.tutorId as any;
+  await sendEmail(tutor.email, 2, { name: tutor.name, subject: `Your premium tutor application was not approved at this time. Reason: ${rejectionReason}` }, 'Application Status Update');
   return application;
 };
