@@ -5,6 +5,7 @@ import { User } from "../users/user.model";
 import { Content, Course } from "../courses/course.model";
 import { askAi } from "../../services/askai.service";
 import { redisClient } from "../../config/redis";
+import { sendEmail } from "../../services/brevo.service";
 
 
 export const enrolledCourses = async (userId:Types.ObjectId,status:string)=> {
@@ -81,6 +82,13 @@ export const markContentService = async (courseId:string , userId:Types.ObjectId
     updatedEnrollment.progress = Number(progress);
 
     await updatedEnrollment.save();
+
+    if (isCompleted) {
+        const user = await User.findById(userId).select("name email").lean();
+        if (user) {
+            await sendEmail(user.email, 2, { name: user.name, subject: `Congratulations! You have successfully completed the course "${updatedEnrollment.courseSnapshot.title}". Great job on finishing all modules!` }, 'Course Completed 🎉');
+        }
+    }
 
     return {
         enrollment : updatedEnrollment,

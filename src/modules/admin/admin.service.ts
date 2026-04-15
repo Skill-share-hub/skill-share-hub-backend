@@ -4,6 +4,7 @@ import { Enrollment } from "../enrollments/enrollment.model";
 import { User } from "../users/user.model";
 import { Types } from "mongoose";
 import { createNotification } from "../notifications/notification.service";
+import { sendEmail } from "../../services/brevo.service";
 
 // ================= GET USERS =================
 export const getAllTutorsService = async (query: any) => {
@@ -295,6 +296,12 @@ export const toggleBlockUserService = async (userId: string) => {
       : "Your account has been unbanned by the administrator.",
     type: user.isBlocked ? "ERROR" : "SUCCESS",
   });
+
+  const subject = user.isBlocked 
+    ? "Your account has been banned by the administrator. Please contact support for more information."
+    : "Your account has been unbanned. You can now log in and continue using SkillShareHub.";
+
+  await sendEmail(user.email, 2, { name: user.name, subject }, 'Account Status Update');
 
   return user;
 };

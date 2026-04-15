@@ -9,6 +9,7 @@ import crypto from 'crypto'
 import { env } from "../../config/env";
 import { Enrollment } from "../enrollments/enrollment.model";
 import { createNotification } from "../notifications/notification.service";
+import { sendEmail } from "../../services/brevo.service";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
   const user = await User.findById(userId);
@@ -171,6 +172,8 @@ export const verifyPayment = async (payload:any, userId:Types.ObjectId) => {
       type: "SUCCESS",
     });
 
+    await sendEmail(user.email, 2, { name: user.name, subject: `Successfully added ${transaction.amount} credits to your wallet. Your new balance is ${user.userCreditBalance} credits.` }, 'Credits Added');
+
   }else {
     throw new ApiError(403,"Invalid signature");
   }
@@ -198,7 +201,7 @@ export const verifyUpiService = async  (upiId:string,userId:string) => {
 
 export const withdrawalService = async (amount:number, userId:string) => {
   
-  const user = await User.findById(userId).select("userCreditBalance");
+  const user = await User.findById(userId).select("userCreditBalance name email");
   if(!user)throw new ApiError(404,"user not found!");
 
   if(amount > user.userCreditBalance){
@@ -222,7 +225,7 @@ export const withdrawalService = async (amount:number, userId:string) => {
 
   console.log(user.userCreditBalance)
 
-  return await Transaction.create({
+  const transaction = await Transaction.create({
     userId : user._id,
     amount : withdrawAmount,
     currency : withdrawAmount * CREDIT_VALUE,
@@ -232,5 +235,9 @@ export const withdrawalService = async (amount:number, userId:string) => {
     status : "pending",
     platformCommission : platformCommission ?? 0
   });
+
+  await sendEmail(user.email, 2, { name: user.name, subject: `Your withdrawal request for ${withdrawAmount} credits has been received and is currently pending. We will notify you once it's processed.` }, 'Withdrawal Requested');
+
+  return transaction;
 
 }

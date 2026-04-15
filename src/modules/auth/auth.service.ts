@@ -2,7 +2,6 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 import { redisClient } from '../../config/redis';
 import { sendEmail } from '../../services/brevo.service';
 import { ApiError } from '../../utils/ApiError';
-import { otpTemplate, registerTemplate } from '../../utils/email.templates';
 import generateOtp from '../../utils/generateOtp';
 import { comparePassword, hashPassword } from '../../utils/hash';
 import { User } from '../users/user.model';
@@ -57,10 +56,11 @@ export const registerUser = async (input: RegisterInput): Promise<RegisterRespon
   revoked: false
 });
   await sendEmail(
-  user.email,
-  `Welcome to SkillShare Hub, ${user.name}! 🎉`,
-  registerTemplate(user.name)
-);
+    user.email,
+    2, 
+    { name: user.name, subject: `Thank you for registering with SkillShareHub. We are excited to have you on board!` },
+    `Welcome to SkillShare Hub, ${user.name}!`
+  );
   return {
     user: {
       id: user._id.toString(),
@@ -248,7 +248,7 @@ export const sendRegisterOtpService = async (email: string): Promise<string> => 
   const otp = generateOtp();
   const otpHashed=await bcrypt.hash(otp,10)
   await redisClient.set(`otp:${email}`,otpHashed , {EX: 60 * 5});
-  await sendEmail(email,'Otp Verification',otpTemplate(otp));
+  await sendEmail(email, 2, { name: 'User', subject: `Your verification code is: ${otp}. This code will expire in 5 minutes.` }, 'Otp Verification');
   return otp;
 };
 
@@ -260,7 +260,7 @@ export const sendForgotPasswordOtpService = async (email: string): Promise<strin
   const otp = generateOtp();
   const otpHashed=await bcrypt.hash(otp,10)
   await redisClient.set(`otp:${email}`,otpHashed , {EX: 60 * 5});
-  await sendEmail(email,'Otp Verification',otpTemplate(otp));
+  await sendEmail(email, 2, { name: 'User', subject: `Your verification code is: ${otp}. This code will expire in 5 minutes.` }, 'Otp Verification');
   return otp;
 };
 
