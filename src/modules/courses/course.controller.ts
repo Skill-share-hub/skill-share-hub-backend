@@ -50,11 +50,11 @@ export const createCourse = async (req:Request, res:Response, next:NextFunction)
 
 export const updateCourse = async (req:Request, res:Response, next:NextFunction):Promise<void> => {
   try{
-    const payload = req.body as Partial<ICourse> ;
+    const payload = req.body as Partial<ICourse> & {s3ThumbnailUrl?:string} ;
     const courseId = Array.isArray(req.params?.id) ? req.params?.id[0] : req.params?.id ;
     const file = req.file as Express.Multer.File & { location: string }; 
     if(file?.location){
-      payload.thumbnailUrl = file.location
+      payload.s3ThumbnailUrl = file.location
     }
 
     const course = await editCourse(payload,courseId, req.user?._id, req.user?.role);
@@ -208,8 +208,8 @@ export const updateContent = async (req:Request, res:Response, next:NextFunction
 
     const payload = {
       ...body,
-      contentUrl : contentUrl?.location,
-      thumbnailUrl : thumbnailUrl?.location
+      s3ContentUrl : contentUrl?.location,
+      s3ThumbnailUrl : thumbnailUrl?.location
     }
 
     const content = await editContent(payload,contentId, req.user?._id);

@@ -49,7 +49,7 @@ export const makeCourse = async (input: ICourse, tutorId: Types.ObjectId, role: 
   return course
 }
 
-export const editCourse = async (input: Partial<ICourse>, courseId: string, tutorId: string, role: string) => {
+export const editCourse = async (input: Partial<ICourse> & {s3ThumbnailUrl?:string}, courseId: string, tutorId: string, role: string) => {
 
   if (!Types.ObjectId.isValid(courseId)) throw new ApiError(400, "Invalid Course ID!");
 
@@ -57,7 +57,9 @@ export const editCourse = async (input: Partial<ICourse>, courseId: string, tuto
     throw new ApiError(400, "Only premium tutor can create paid courses!");
   }
 
-  // Build update object only with defined fields
+  const isCourseExist = await Course.findOne({ _id: courseId, tutorId });
+  if(!isCourseExist)throw new ApiError(404,"Course not found!");
+
   const updateData: any = {};
   const fields = [
     'category', 'contentModules', 'courseType', 'creditCost',
@@ -66,7 +68,7 @@ export const editCourse = async (input: Partial<ICourse>, courseId: string, tuto
   ];
 
   fields.forEach(field => {
-    const value = input[field as keyof Partial<ICourse>];
+    const value = input[field as keyof Partial<ICourse & {s3ThumbnailUrl?:string}>];
     if (value !== undefined) {
       if (field === 'price') {
         updateData.price = role === "premiumTutor" ? value : 0;
@@ -75,6 +77,14 @@ export const editCourse = async (input: Partial<ICourse>, courseId: string, tuto
       }
     }
   });
+
+  if(input.s3ThumbnailUrl){
+    const s3Key =   getS3KeyFromUrl(isCourseExist.thumbnailUrl)
+    if(s3Key){
+      await deleteFromS3(s3Key);
+      updateData.thumbnailUrl = input.s3ThumbnailUrl ;
+    }
+  }
 
   const course = await Course.findOneAndUpdate(
     { _id: courseId, tutorId },
@@ -361,11 +371,11 @@ export const makeContent = async (
 }
 
 export const editContent = async (
-  input:Required<IContent>,
+  input:Required<IContent> & {s3ContentUrl:string,s3ThumbnailUrl:string},
   contentId:string,
   tutorId: Types.ObjectId
 ) => {
-  const {contentUrl,duration,summary,thumbnailUrl,title , quizData} = input ;
+  let {s3ContentUrl,s3ThumbnailUrl,contentUrl,duration,summary,thumbnailUrl,title , quizData} = input ;
 
   const existingContent = await Content.findById(contentId).lean();
   if(!existingContent)throw new ApiError(404,"Content not found!");
@@ -375,6 +385,22 @@ export const editContent = async (
     tutorId
   }).lean();
   if(!course)throw new ApiError(403,"Course doesn't match with user!");
+
+  if(s3ContentUrl){
+    const s3Key =   getS3KeyFromUrl(existingContent.contentUrl)
+    if(s3Key){
+      await deleteFromS3(s3Key);
+      contentUrl = s3ContentUrl
+    }
+  } 
+
+  if(s3ThumbnailUrl){
+    const s3Key =   getS3KeyFromUrl(existingContent.thumbnailUrl)
+    if(s3Key){
+      await deleteFromS3(s3Key);
+      thumbnailUrl = s3ThumbnailUrl
+    }
+  }
 
   const content = await Content.findOneAndUpdate(
     {_id : contentId},

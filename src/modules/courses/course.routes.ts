@@ -7,7 +7,6 @@ import { ContentSchema, CourseSchema, UpdateCourseSchema, UpdateStatusSchema } f
 import { changeCourseStatus, createCourse, getAllCourses, getSingleCourse, updateCourse, deleteCourse, getTutorCourses, createContent, updateContent, deleteContent, getCourseCategories, toggleBlockCourse } from './course.controller';
 import { ReviewController } from '../reviews/review.controller';
 import { upload } from '../../utils/multer';
-import { removeCourse } from './course.service';
 
 const router = Router();
 
