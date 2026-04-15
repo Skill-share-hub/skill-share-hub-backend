@@ -12,23 +12,16 @@ import { createNotification } from "../notifications/notification.service";
 import { sendEmail } from "../../services/brevo.service";
 
 export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
+
   const user = await User.findById(userId);
   if (!user) throw new ApiError(404, "User not found!"); 
+
   const isTutor = user.role === "tutor" || user.role === "premiumTutor";
+
   if (query.refresh) {
-    if(isTutor){
-       return {
-      creditBalance: user?.tutorProfile?.totalCreditsEarned ?? 0,
-      creditValue: (user?.tutorProfile?.totalCreditsEarned ?? 0) * CREDIT_VALUE,
-      creditConst: CREDIT_VALUE,
-      creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
-      creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
-      creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
-      creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
-      creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
-    }
-    }
     return {
+      earnedCreditBalance: user?.tutorProfile?.totalCreditsEarned ?? 0,
+      earnedCreditValue: (user?.tutorProfile?.totalCreditsEarned ?? 0) * CREDIT_VALUE,
       creditBalance: user.userCreditBalance,
       creditValue: user.userCreditBalance * CREDIT_VALUE,
       creditConst: CREDIT_VALUE,
@@ -40,57 +33,49 @@ export const walletSummary = async (query: IQuery, userId: Types.ObjectId) => {
     }
   }
 
-  // --- Logic for Full History ---
-
    const transactionQuery: any = { userId };
-    if (query.status) {
-    transactionQuery.status = query.status;
-  } else {
-    transactionQuery.status = { $ne: "initialized" };
-  }
-   if (isTutor) {
-    // If Tutor: Show only earnings from teaching and withdrawals
-    transactionQuery.type = { $in: ["tutor_earning", "credit_withdraw"] };
-  } 
 
-  // Else (Student/Admin): Show all history (purchases, spending, AND any earnings)
-  const transactions = await Transaction.find(transactionQuery)
+    if (query.status) {
+      transactionQuery.status = query.status;
+    } else {
+      transactionQuery.status = { $ne: "initialized" };
+    }
+
+    const transactions = await Transaction.find(transactionQuery)
     .limit(query.limit || 10)
     .sort({ createdAt: -1 });
 
-  const transactionsCount = await Transaction.countDocuments(transactionQuery);
+    const transactionsCount = await Transaction.countDocuments(transactionQuery);
 
+    const enrollments = await Enrollment.find({ userId });
 
-  const enrollments = await Enrollment.find({ userId });
+    const enrichedTransactions = transactions.map((tx: any) => {
+      const match = enrollments.find(
+        (en) =>
+          Math.abs(new Date(en.createdAt).getTime() - new Date(tx.createdAt).getTime()) < 10000
+      );
 
-  const enrichedTransactions = transactions.map((tx: any) => {
-    const match = enrollments.find(
-      (en) =>
-        Math.abs(new Date(en.createdAt).getTime() - new Date(tx.createdAt).getTime()) < 10000
-    );
+      return {
+        ...tx._doc,
+        courseId: match?.courseId || null,
+        courseSnapshot: match?.courseSnapshot || null
+      };
+    });
 
     return {
-      ...tx._doc,
-      courseId: match?.courseId || null,
-      courseSnapshot: match?.courseSnapshot || null
-    };
-  });
-  const finalBalance = isTutor 
-    ? (user?.tutorProfile?.totalCreditsEarned ?? 0) 
-    : user.userCreditBalance;
-
-  return {
-    creditBalance: finalBalance,
-    creditValue: finalBalance * CREDIT_VALUE,
-    transactions: enrichedTransactions,
-    totalTransactions : transactionsCount,
-    creditConst: CREDIT_VALUE,
-    creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
-    creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
-    creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
-    creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
-    creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
-  }
+      earnedCreditBalance: user?.tutorProfile?.totalCreditsEarned ?? 0,
+      earnedCreditValue: (user?.tutorProfile?.totalCreditsEarned ?? 0) * CREDIT_VALUE,
+      creditBalance: user.userCreditBalance,
+      creditValue: user.userCreditBalance * CREDIT_VALUE,
+      transactions: enrichedTransactions,
+      totalTransactions : transactionsCount,
+      creditConst: CREDIT_VALUE,
+      creditPurchaseCommision : CREDIT_PURCHASE_COMMISSION,
+      creditWithdrawMinLimit : CREDIT_WITHDRAW_MIN_LIMIT ,
+      creditWithdrawMaxLimit : CREDIT_WITHDRAW_MAX_LIMIT , 
+      creditWithdrawCommision : CREDIT_WITHDRAW_COMMISSION,
+      creditWithdrawCommisionLimit : CREDIT_WITHDRAW_LIMIT
+    }
 }
 
 export const razorpayCreditOrder = async (credits:number, userId:Types.ObjectId) => {
@@ -201,10 +186,10 @@ export const verifyUpiService = async  (upiId:string,userId:string) => {
 
 export const withdrawalService = async (amount:number, userId:string) => {
   
-  const user = await User.findById(userId).select("userCreditBalance name email");
+  const user = await User.findById(userId).select("userCreditBalance name email tutorProfile");
   if(!user)throw new ApiError(404,"user not found!");
 
-  if(amount > user.userCreditBalance){
+  if(amount > (user?.tutorProfile?.totalCreditsEarned || 0)){
     throw new ApiError(400,"Insufficient balance!");
   }
 
@@ -218,18 +203,14 @@ export const withdrawalService = async (amount:number, userId:string) => {
     withdrawAmount = amount ;
   }
 
-  console.log(user.userCreditBalance)
-
-  user.userCreditBalance -= withdrawAmount ;
+  user.tutorProfile.totalCreditsEarned -= withdrawAmount ;
   await user.save();
-
-  console.log(user.userCreditBalance)
 
   const transaction = await Transaction.create({
     userId : user._id,
     amount : withdrawAmount,
     currency : withdrawAmount * CREDIT_VALUE,
-    creditBalance : user.userCreditBalance,
+    creditBalance : user.tutorProfile.totalCreditsEarned,
     type : 'credit_withdraw',
     method : "wallet",
     status : "pending",
