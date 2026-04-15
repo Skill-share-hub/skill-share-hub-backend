@@ -220,7 +220,7 @@ export const getCourse = async (
   role?: string
 ) => {
 
-  // ✅ ADMIN → allow full access
+  // Admin can inspect any course including protected media URLs.
   if (role === "admin") {
     return await Course.findById(courseId)
       .populate({
@@ -229,36 +229,62 @@ export const getCourse = async (
       })
       .populate({
         path: "contentModules",
-        select: "-contentUrl"
       })
       .lean();
   }
 
-  const user = await User.findById(userId).select("enrolledCourses");
+  // Tutors should always be able to access their own uploaded video URLs.
+  if ((role === "tutor" || role === "premiumTutor") && userId) {
+    const tutorCourse = await Course.findOne({
+      _id: courseId,
+      tutorId: userId
+    })
+      .populate({
+        path: "tutorId",
+        select: "_id name avatarUrl email tutorProfile"
+      })
+      .populate({
+        path: "contentModules",
+      })
+      .lean();
 
-  const course = await Course.findOne({
-    $and: [
-      { _id: courseId },
-      { _id: { $nin: user?.enrolledCourses } }
-    ]
-  })
+    if (tutorCourse) {
+      console.log(tutorCourse)
+      return tutorCourse;
+    }
+  }
+
+  let enrolledCourses: Types.ObjectId[] = [];
+  if (userId && Types.ObjectId.isValid(String(userId))) {
+    const user = await User.findById(userId).select("enrolledCourses").lean();
+    enrolledCourses = user?.enrolledCourses ?? [];
+  }
+
+  const course = await Course.findOne(
+    enrolledCourses.length > 0
+      ? {
+          $and: [
+            { _id: courseId },
+            { _id: { $nin: enrolledCourses } }
+          ]
+        }
+      : { _id: courseId }
+  )
     .populate({
       path: "tutorId",
       select: "_id name avatarUrl email tutorProfile"
     })
     .populate({
       path: "contentModules",
-      select: "-contentUrl"
     })
     .lean();
 
   if (!course) {
     throw new ApiError(404, "Course not found!");
   }
-
+  console.log(course)
   return course;
 };
-
 export const removeCourse = async (courseId: string, userId: Types.ObjectId) => {
 
   const user = await User.findOne({ _id: userId, "tutorProfile.createdCourses": courseId }).lean();
@@ -424,6 +450,7 @@ export const removeContent =  async (contentId:string, courseId:string, userId:T
   return true
 
 }
+
 
 
 

@@ -117,7 +117,7 @@ export const getSingleCourse = async (req: Request, res: Response, next: NextFun
     const token = req.cookies.accessToken;
     const user = await checkToken(token);
 
-    const course = await getCourse(courseId,user?._id || "");
+    const course = await getCourse(courseId, user?._id || "", user?.role);
 
     res.status(200).json(
       new ApiResponse("course fetched successfully", course, true)
