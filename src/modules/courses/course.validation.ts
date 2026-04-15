@@ -29,7 +29,16 @@ export const ContentSchema = z.object({
   summary : z.string(),
   thumbnailUrl : z.string(),
   duration : z.coerce.number().min(1 , "video should be atleast 1 minute"),
-  quizData : z.array(quizSchema)
+  quizData : z.preprocess((data) => {
+      if (typeof data === "string") {
+        try {
+          return JSON.parse(data);
+        } catch {
+          return data;
+        }
+      }
+        return data;
+      }, z.array(quizSchema))
 }).partial();
 
 const baseSchema = z.object({

@@ -29,3 +29,12 @@ export const otpLimiter = rateLimit({
     message: "Too many OTP requests. Try again after 10 minutes.",
   },
 });
+
+export const botLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+  success: false,
+  message: "Too many OTP requests. Try again after 10 minutes.",
+ }
+})
