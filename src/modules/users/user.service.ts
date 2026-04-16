@@ -94,6 +94,7 @@ export const updateUserProfileService = async (
     user.studentProfile = {
       bio: "",
       skills: [],
+      interests: [],
       ...(user.studentProfile || {}),
       ...studentProfile,
     };
