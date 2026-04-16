@@ -136,11 +136,22 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
       ? course.creditCost 
       : Math.ceil((course.price || 0) / CREDIT_VALUE);
 
-    if (user.userCreditBalance < costInCredits) {
+    if (
+      user.userCreditBalance < costInCredits && 
+      (user.tutorProfile.totalCreditsEarned || 0) < costInCredits
+    ){
       throw new ApiError(400, "Insufficient credits");
     }
 
-    user.userCreditBalance -= costInCredits;
+    if(
+      user.userCreditBalance < costInCredits &&
+      (user.tutorProfile.totalCreditsEarned || 0) > costInCredits
+    ){
+      user.tutorProfile.totalCreditsEarned -= costInCredits;
+    }else{
+      user.userCreditBalance -= costInCredits;
+    }
+
     await user.save({ session });
 
     // 1. Create Enrollment early to get its ID for linking
@@ -168,7 +179,6 @@ export const purchaseWithCredits = async (courseId: string, userId: string) => {
     const tutor = await User.findById(course.tutorId).session(session);
     if (!tutor) throw new ApiError(404, "Tutor not found");
 
-    tutor.userCreditBalance = (tutor.userCreditBalance || 0) + tutorCredits;
     if (tutor.tutorProfile) {
       tutor.tutorProfile.totalCreditsEarned = (tutor.tutorProfile.totalCreditsEarned || 0) + tutorCredits;
       tutor.tutorProfile.earningsTotal = (tutor.tutorProfile.earningsTotal || 0) + (tutorCredits * CREDIT_VALUE);

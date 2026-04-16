@@ -203,8 +203,10 @@ export const withdrawalService = async (amount:number, userId:string) => {
     withdrawAmount = amount ;
   }
 
-  user.tutorProfile.totalCreditsEarned -= withdrawAmount ;
+  user.tutorProfile.totalCreditsEarned -= amount ;
   await user.save();
+
+  // transfer money to platform account
 
   const transaction = await Transaction.create({
     userId : user._id,
