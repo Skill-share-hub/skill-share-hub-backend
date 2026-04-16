@@ -25,7 +25,7 @@ export interface IUser {
     interests?: string[];
   };
 
-  tutorProfile?: {
+  tutorProfile: {
     bio: string;
     skills: string[];
     createdCourses: Types.ObjectId[];
