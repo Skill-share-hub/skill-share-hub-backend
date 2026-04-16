@@ -35,6 +35,6 @@ export const botLimiter = rateLimit({
   max: 5,
   message: {
   success: false,
-  message: "Too many OTP requests. Try again after 10 minutes.",
+  message: "Limit Reached. Try again after 15 minutes.",
  }
 })
