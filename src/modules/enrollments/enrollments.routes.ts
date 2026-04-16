@@ -1,18 +1,21 @@
 import {Router} from 'express'
 import { authenticate } from '../../middlewares/auth.middleware';
 import { getMyEnrollments, getEnrollmentById, markContent , getQuizController , getSummaryController } from './enrollment.controller';
+import { authorizeRoles } from '../../middlewares/role.middleware';
 
 const router = Router();
 
-router.get('/',authenticate,getMyEnrollments);
+router.use(authenticate,authorizeRoles("student"))
 
-router.get('/:id',authenticate,getEnrollmentById);
+router.get('/',getMyEnrollments);
 
-router.get('/quiz/:id',authenticate,getQuizController);
+router.get('/:id',getEnrollmentById);
 
-router.get('/summary/:id',authenticate,getSummaryController);
+router.get('/quiz/:id',getQuizController);
 
-router.patch('/:id/mark',authenticate,markContent);
+router.get('/summary/:id',getSummaryController);
+
+router.patch('/:id/mark',markContent);
 
 
 export default router ;

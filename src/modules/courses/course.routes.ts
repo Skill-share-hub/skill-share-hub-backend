@@ -16,7 +16,7 @@ router.get('/', getAllCourses);
 
 router.get('/tutor',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor", "student"),
+  authorizeRoles("tutor", "premiumTutor"),
   getTutorCourses
 );
 
@@ -71,14 +71,14 @@ router.put('/:id',
 
 router.patch('/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
+  authorizeRoles("tutor", "premiumTutor","admin"),
   validate(UpdateStatusSchema),
   changeCourseStatus
 );
 
 router.delete('/:id',
   authenticate,
-  authorizeRoles("tutor", "premiumTutor"),
+  authorizeRoles("tutor", "premiumTutor","admin"),
   deleteCourse
 );
 

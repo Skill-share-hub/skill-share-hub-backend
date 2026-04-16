@@ -158,10 +158,7 @@ export const getAdminDashboardStats = async () => {
           _id: null,
           totalEnrollments: { $sum: 1 },
           creditEnrollments: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "credit"] }, 1, 0] } },
-          paidEnrollments: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, 1, 0] } },
-          totalTime: { $sum: "$totalWatchTime" },
-          creditTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "credit"] }, "$totalWatchTime", 0] } },
-          paidTime: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, "$totalWatchTime", 0] } }
+          paidEnrollments: { $sum: { $cond: [{ $eq: ["$courseSnapshot.courseType", "paid"] }, 1, 0] } }
         }
       }
     ])
@@ -196,15 +193,6 @@ export const getAdminDashboardStats = async () => {
       details: [
         { label: "Credit", value: e.creditEnrollments },
         { label: "Paid", value: e.paidEnrollments }
-      ]
-    },
-    {
-      title: "Watch Time",
-      count: e.totalTime,
-      unit: "min",
-      details: [
-        { label: "Credit", value: e.creditTime },
-        { label: "Paid", value: e.paidTime }
       ]
     }
   ];

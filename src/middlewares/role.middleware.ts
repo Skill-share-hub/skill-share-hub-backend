@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 
-export const authorizeRoles = (...roles: string[]) => {
+type Roles = "student" | "tutor" | "premiumTutor" | "admin"
+
+export const authorizeRoles = (...roles: Roles[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({

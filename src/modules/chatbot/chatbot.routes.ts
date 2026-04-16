@@ -10,4 +10,5 @@ router.post('/', authenticate , botLimiter , askQuestionController );
 router.get('/:id', authenticate , getChatBotMessages );
 
 router.get('/messages/:id', authenticate , getRoomChatMessages);
+
 export default router
